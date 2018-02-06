@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<HCIP.AjaxDataSetting>
+  <Data name="GetData">
+    <SqlDefinition type="MySql" ConnStringName="test_mysql">
+      <SqlCommand>
+        <![CDATA[
+       select ID,NAME from test WHERE ID <10000
+      ]]>
+      </SqlCommand>
+    </SqlDefinition>
+  </Data>
+</HCIP.AjaxDataSetting>
