@@ -6,6 +6,7 @@ namespace DBHelper.Interface
 {
     public interface ISQLHelper
     {
+        string ConnectionString { get; set; }
         /// <summary>
         /// 执行sql命令，返回影响行数
         /// </summary>
@@ -134,6 +135,6 @@ namespace DBHelper.Interface
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
         IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TReturn>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TReturn>> func, bool isUseTrans);
-        
+
     }
 }

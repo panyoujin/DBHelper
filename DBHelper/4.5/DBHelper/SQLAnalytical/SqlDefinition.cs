@@ -21,14 +21,27 @@ namespace DBHelper.SQLAnalytical
         /// <param name="node"></param>
         public SqlDefinition(XmlNode node)
         {
-            this.SqlCommand = XmlUtility.getNodeStringValue(node["SqlCommand"]);
+            if (node != null)
+            {
+                this.SqlCommand = XmlUtility.getNodeStringValue(node["SqlCommand"]);
 
-            this.SqlDBType = XmlUtility.getNodeAttributeStringValue(node, "type");
-            this.SqlConnStringName = XmlUtility.getNodeAttributeStringValue(node, "ConnStringName", ConfigHelper.GetConfigValue("ConnStringName", "DbContext"));
-            this.Assembly = XmlUtility.getNodeAttributeStringValue(node, "Assembly");
-            this.ModelClassName = XmlUtility.getNodeAttributeStringValue(node, "ModelClassName");
+                this.SqlDBType = XmlUtility.getNodeAttributeStringValue(node, "type");
+                this.SqlConnStringName = XmlUtility.getNodeAttributeStringValue(node, "ConnStringName", ConfigHelper.GetConfigValue("ConnStringName", "DbContext"));
+                this.Assembly = XmlUtility.getNodeAttributeStringValue(node, "Assembly");
+                this.ModelClassName = XmlUtility.getNodeAttributeStringValue(node, "ModelClassName");
+            }
         }
-
+        public SqlDefinition(SqlAnalyModel sqlAnaly)
+        {
+            this.SqlCommand = sqlAnaly.SqlText;
+            this.SqlDBType = sqlAnaly.DBType;
+            this.SqlConnStringName = sqlAnaly.SqlConnStringName;
+            this.Assembly = sqlAnaly.Assembly;
+            this.ModelClassName = sqlAnaly.ModelClassName;
+            this.CanEmptyMC = sqlAnaly.CanEmptyMC;
+            this.ReplaceMC = sqlAnaly.ReplaceMC;
+            this.ParamMC = sqlAnaly.ParamMC;
+        }
         #endregion
 
         #region property define
@@ -60,10 +73,25 @@ namespace DBHelper.SQLAnalytical
         private string ModelClassName { get; set; }
         private string SqlConnStringName { get; set; }
         private string SqlDBType { get; set; }
+
+        /// <summary>
+        /// 可空
+        /// </summary>
+        public MatchCollection CanEmptyMC { get; set; }
+        /// <summary>
+        /// 直接替换字符串
+        /// </summary>
+        public MatchCollection ReplaceMC { get; set; }
+        /// <summary>
+        /// 直接使用参数
+        /// </summary>
+        public MatchCollection ParamMC { get; set; }
+
+
         public SqlAnalyModel SqlAnaly(Dictionary<string, object> keyValue)
         {
             SqlAnalyModel model = new SqlAnalyModel();
-            GetAllParseItem(_sql, keyValue);
+            GetAllParseItem(keyValue);
             model.SqlText = SqlCommand;
             model.SqlConnStringName = SqlConnStringName;
             model.DBType = SqlDBType;
@@ -71,6 +99,17 @@ namespace DBHelper.SQLAnalytical
             model.ModelClassName = ModelClassName;
             return model;
         }
+        //public SqlAnalyModel SqlAnaly(Dictionary<string, object> keyValue)
+        //{
+        //    SqlAnalyModel model = new SqlAnalyModel();
+        //    GetAllParseItem(_sql, keyValue);
+        //    model.SqlText = SqlCommand;
+        //    model.SqlConnStringName = SqlConnStringName;
+        //    model.DBType = SqlDBType;
+        //    model.Assembly = Assembly;
+        //    model.ModelClassName = ModelClassName;
+        //    return model;
+        //}
 
         #endregion
 
@@ -122,6 +161,50 @@ namespace DBHelper.SQLAnalytical
                 _sql = _sql.Replace(matchingSql, parseItem.GetResult(this.SqlDBType));
             }
             return returnResult;
+        }
+
+        /// <summary>
+        /// 解析出SQL语句中需要待解析的内容
+        /// </summary>
+        /// <param name="isParam">是否参数化  flase:否 true:是</param>
+        private void GetAllParseItem(Dictionary<string, object> KeyValue)
+        {
+            ///试用正则表达式先找出关键字,关键字必须使用<%= %>包含起来
+            ///for example : select * from user where (1=1) <%=User.Id=@id%>
+            if (this.CanEmptyMC != null)
+            {
+                foreach (Match c in this.CanEmptyMC)
+                {
+                    string matchingSql = c.ToString();
+                    ///在原始的SQL中取出掉这些待解析的SQL
+                    var parseItem = new ParseItem(c.Value.Replace("<%=", "").Replace("%>", ""), KeyValue);
+                    //returnResult.Add(parseItem);
+                    _sql = _sql.Replace(matchingSql, parseItem.GetResult(this.SqlDBType));
+                }
+            }
+            if (this.ReplaceMC != null)
+            {
+                foreach (Match c in this.ReplaceMC)
+                {
+                    string matchingSql = c.ToString();
+                    ///在原始的SQL中取出掉这些待解析的SQL
+                    var parseItem = new ParseItem(c.Value.Replace("<R%=", "").Replace("%R>", ""), KeyValue);
+                    //returnResult.Add(parseItem);
+                    _sql = _sql.Replace(matchingSql, parseItem.GetResult(this.SqlDBType, false));
+                }
+
+            }
+            if (this.ParamMC != null)
+            {
+                foreach (Match c in this.ParamMC)
+                {
+                    string matchingSql = c.ToString();
+                    ///在原始的SQL中取出掉这些待解析的SQL
+                    var parseItem = new ParseItem(c.Value.Replace("<%=", "").Replace("%>", ""), KeyValue);
+                    //returnResult.Add(parseItem);
+                    _sql = _sql.Replace(matchingSql, parseItem.GetResult(this.SqlDBType));
+                }
+            }
         }
         #endregion
     }

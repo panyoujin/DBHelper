@@ -10,22 +10,10 @@ namespace DBHelper.SQLHelper
     public class MySqlHelper : ISQLHelper
     {
         #region Fields
+        
+        private string _connectionString;
+        public string ConnectionString { get => _connectionString; set => _connectionString = value; }
 
-        public MySqlHelper(string sqlConnStringName)
-        {
-            SqlConnStringName = sqlConnStringName;
-        }
-
-        private string SqlConnStringName { get; set; }
-
-
-        private string ConnectionString
-        {
-            get
-            {
-                return System.Configuration.ConfigurationManager.ConnectionStrings[SqlConnStringName].ConnectionString;
-            }
-        }
         //private static readonly BindingFlags bf = BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static | BindingFlags.NonPublic;
 
         #endregion
@@ -475,7 +463,7 @@ namespace DBHelper.SQLHelper
             }
         }
 
-        
+
         #endregion Query
 
 

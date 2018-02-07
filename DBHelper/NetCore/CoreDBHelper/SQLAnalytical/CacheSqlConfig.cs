@@ -13,6 +13,7 @@ namespace DBHelper.SQLAnalytical
     {
         private static readonly Lazy<CacheSqlConfig> _instance = new Lazy<CacheSqlConfig>(() => new CacheSqlConfig());
         private static Dictionary<string, XmlNode> _sqlDic = new Dictionary<string, XmlNode>();
+        private static Dictionary<string, SqlAnalyModel> _sqlAnalyModelDic = new Dictionary<string, SqlAnalyModel>();
         static object _SqlLock = new object();
         private string _sqlConfigPath;
         /// <summary>
@@ -54,7 +55,7 @@ namespace DBHelper.SQLAnalytical
         }
         private CacheSqlConfig()
         {
-
+            SqlConfigInit();
         }
         /// <summary>
         /// 通过指定的KEY获取SQL
@@ -77,8 +78,9 @@ namespace DBHelper.SQLAnalytical
                 throw new Exception(string.Format("配置中找不到KEY：{0}", key));
             }
             Dictionary<string, object> keyValueTemp = ReplaceInjection(keyValue);
-            var sqlDefinition = new SqlDefinition(_sqlDic[tempKey]);
-            return sqlDefinition.SqlAnaly(keyValueTemp);
+            SqlDefinition sqlDefinition = new SqlDefinition(_sqlAnalyModelDic[tempKey]);
+            var sqlAnaly = sqlDefinition.SqlAnaly(keyValueTemp);
+            return sqlAnaly;
         }
         /// <summary>
         /// 替换输入字符串中包含的SQL敏感词
@@ -170,6 +172,7 @@ namespace DBHelper.SQLAnalytical
                             lock (_SqlLock)
                             {
                                 _sqlDic[key] = nodeChild["SqlDefinition"];
+                                _sqlAnalyModelDic[key] = SqlAnalyModel.XmlToSqlAnalyModel(nodeChild["SqlDefinition"]);
                             }
 
                         }

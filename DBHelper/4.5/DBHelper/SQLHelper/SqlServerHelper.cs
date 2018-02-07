@@ -14,24 +14,9 @@ namespace DBHelper.SQLHelper
     {
 
         #region Fields
-
-        public SqlServerHelper(string sqlConnStringName)
-        {
-            SqlConnStringName = sqlConnStringName;
-        }
-
-        private string SqlConnStringName { get; set; }
-
-
-        private string ConnectionString
-        {
-            get
-            {
-                return System.Configuration.ConfigurationManager.ConnectionStrings[SqlConnStringName].ConnectionString;
-            }
-        }
-        //private static readonly BindingFlags bf = BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static | BindingFlags.NonPublic;
-
+        
+        private string _connectionString;
+        public string ConnectionString { get => _connectionString; set => _connectionString = value; }
         #endregion
 
         #region ExecuteNonQuery
