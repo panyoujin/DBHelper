@@ -57,6 +57,22 @@ namespace DBHelper.SQLAnalytical
         {
             SqlConfigInit();
         }
+
+        public void ClearSqlDic(string key)
+        {
+            try
+            {
+                if (_sqlDic != null && _sqlDic.ContainsKey(key))
+                {
+                    _sqlDic.Remove(key);
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
         /// <summary>
         /// 通过指定的KEY获取SQL
         /// </summary>

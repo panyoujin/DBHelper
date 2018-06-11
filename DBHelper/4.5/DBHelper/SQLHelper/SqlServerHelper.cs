@@ -14,7 +14,7 @@ namespace DBHelper.SQLHelper
     {
 
         #region Fields
-        
+
         private string _connectionString;
         public string ConnectionString { get => _connectionString; set => _connectionString = value; }
         #endregion
@@ -464,5 +464,29 @@ namespace DBHelper.SQLHelper
             }
         }
         #endregion Query
+
+        #region Test
+        /// <summary>
+        /// Test Connection
+        /// </summary>
+        /// <returns></returns>
+        public bool TestConnection()
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(ConnectionString))
+                {
+                    conn.Open();
+                    conn.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return true;
+        }
+
+        #endregion
     }
 }

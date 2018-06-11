@@ -21,7 +21,7 @@ namespace DBHelper.Extend
             var t = obj.GetType();
             foreach (var item in t.GetProperties())
             {
-                dic.Add(item.Name, item.GetValue(obj));
+                dic.Add(item.Name, item.GetValue(obj, null));
             }
             return dic;
         }
@@ -38,11 +38,11 @@ namespace DBHelper.Extend
             {
                 if (item.Name == name)
                 {
-                    return item.GetValue(data);
+                    return item.GetValue(data, null);
                 }
             }
             return null;
         }
-        
+
     }
 }

@@ -468,6 +468,29 @@ namespace DBHelper.SQLHelper
 
 
 
+        #region Test
+        /// <summary>
+        /// Test Connection
+        /// </summary>
+        /// <returns></returns>
+        public bool TestConnection()
+        {
+            try
+            {
+                using (MySqlConnection conn = new MySqlConnection(ConnectionString))
+                {
+                    conn.Open();
+                    conn.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return true;
+        }
+
+        #endregion
 
 
 

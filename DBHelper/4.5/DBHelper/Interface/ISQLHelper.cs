@@ -135,6 +135,12 @@ namespace DBHelper.Interface
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
         IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TReturn>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TReturn>> func, bool isUseTrans);
-        
+
+        /// <summary>
+        /// Test Connection
+        /// </summary>
+        /// <returns></returns>
+        bool TestConnection();
+
     }
 }

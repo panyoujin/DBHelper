@@ -447,5 +447,18 @@ namespace DBHelper.SQLHelper
                 throw ex;
             }
         }
+
+        #region Test
+        /// <summary>
+        /// Test Connection
+        /// </summary>
+        /// <returns></returns>
+        public bool TestConnection(string sqlKey, Dictionary<string, object> paramDic)
+        {
+            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            return GetSQLHelper(sqlAnaly).TestConnection();
+        }
+
+        #endregion
     }
 }

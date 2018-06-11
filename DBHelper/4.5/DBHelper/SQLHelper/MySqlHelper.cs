@@ -12,7 +12,7 @@ namespace DBHelper.SQLHelper
     public class MySqlHelper : ISQLHelper
     {
         #region Fields
-        
+
         private string _connectionString;
         public string ConnectionString { get => _connectionString; set => _connectionString = value; }
         #endregion
@@ -462,9 +462,32 @@ namespace DBHelper.SQLHelper
             }
         }
 
-        
+
         #endregion Query
 
+        #region Test
+        /// <summary>
+        /// Test Connection
+        /// </summary>
+        /// <returns></returns>
+        public bool TestConnection()
+        {
+            try
+            {
+                using (MySqlConnection conn = new MySqlConnection(ConnectionString))
+                {
+                    conn.Open();
+                    conn.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return true;
+        }
+
+        #endregion
 
 
 

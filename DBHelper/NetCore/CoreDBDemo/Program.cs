@@ -11,28 +11,8 @@ namespace CoreDBDemo
         static void Main(string[] args)
         {
             Dictionary<string, object> dic = new Dictionary<string, object>();
-            dic["ID"] = 1;
-            dic["Start"] = 0;
-            dic["End"] = 1;
             var list = SQLHelperFactory.Instance.QueryForList("GetData", dic);
-            Thread t4 = new Thread(() =>
-            {
-                while (IsStart)
-                {
-                    Thread.Sleep(1000 * 5);
-                    IsStart = false;
-                }
-                Console.WriteLine("完成");
-            });
-            t4.Start();
-            for (var i = 0; i < 999; i++)
-            {
-                Thread t = new Thread((s) =>
-                {
-                    Query(s);
-                });
-                t.Start(i);
-            }
+            
             Console.Read();
         }
         static void Query(object index)
