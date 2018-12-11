@@ -4,7 +4,7 @@
     <SqlDefinition type="MySql" ConnStringName="test_mysql">
       <SqlCommand>
         <![CDATA[
-       select ID,NAME from test where 1=1 <%=and ID=@@ID@@%> and ID = @@ID@@ LIMIT <R%=@@Start@@,@@End@@%R>
+      SELECT * FROM `sys_log`WHERE Table_Name=@@TableName@@ <%= AND Primary_Key=@@PrimaryKey@@ %><R%= AND Log_Type IN (@@LogType@@)%R>;
       ]]>
       </SqlCommand>
     </SqlDefinition>

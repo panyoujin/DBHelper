@@ -137,6 +137,47 @@ namespace DBHelper.Interface
         IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TReturn>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TReturn>> func, bool isUseTrans);
 
         /// <summary>
+        /// 返回3个结果集，通过委托
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <typeparam name="TReturn"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <param name="func"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
+        IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TReturn>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TReturn>> func, bool isUseTrans);
+
+        /// <summary>
+        /// 返回4个结果集，通过委托
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <typeparam name="TReturn"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <param name="func"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
+        IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TFourth, TReturn>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TReturn>> func, bool isUseTrans);
+
+        /// <summary>
+        /// 返回5个结果集，通过委托
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <typeparam name="TReturn"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <param name="func"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
+        IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth, TReturn>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TFifth>, IEnumerable<TReturn>> func, bool isUseTrans);
+        /// <summary>
         /// Test Connection
         /// </summary>
         /// <returns></returns>

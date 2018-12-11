@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Linq;
 
 namespace DBDemo
 {
@@ -10,28 +11,22 @@ namespace DBDemo
         static bool IsStart = true;
         static void Main(string[] args)
         {
-            Dictionary<string, object> dic = new Dictionary<string, object>();
-            dic["ID"] = 1;
-            dic["Start"] = 0;
-            dic["End"] = 1;
-            var list = SQLHelperFactory.Instance.QueryForList("GetData", dic);
-            Thread t4 = new Thread(() =>
+            try
             {
-                while (IsStart)
-                {
-                    Thread.Sleep(1000 * 5);
-                    IsStart = false;
-                }
-                Console.WriteLine("完成");
-            });
-            t4.Start();
-            for (var i = 0; i < 999; i++)
+                Dictionary<string, object> dic = new Dictionary<string, object>();
+                var ulist = SQLHelperFactory.Instance.QueryMultiple<area, user, user>("GetData", dic, (a, u) =>
+                  {
+                      foreach (user item in u)
+                      {
+                          item.AreaList = a.ToList();
+                      }
+                      return u;
+                  });
+                var t = 1;
+            }
+            catch (Exception ex)
             {
-                Thread t = new Thread((s) =>
-                {
-                    Query(s);
-                });
-                t.Start(i);
+
             }
             Console.Read();
         }
@@ -62,5 +57,18 @@ namespace DBDemo
                 Thread.Sleep(10);
             }
         }
+
+        public class area
+        {
+            public string AreaId { get; set; }
+            public string AreaName { get; set; }
+        }
+        public class user
+        {
+            public string UserId { get; set; }
+            public string UserAccount { get; set; }
+            public List<area> AreaList { get; set; }
+        }
     }
 }
+

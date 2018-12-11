@@ -2,6 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>jimmy.pan</Authors>
+    <Description>.NET 使用正则表达式，xml解析，封装 Dapper 让SQL从代码迁移到xml文件上，并实现简单的逻辑处理</Description>
+    <PackageProjectUrl>https://github.com/panyoujin/DBHelper</PackageProjectUrl>
+    <NeutralLanguage></NeutralLanguage>
+    <Version>1.0.1</Version>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

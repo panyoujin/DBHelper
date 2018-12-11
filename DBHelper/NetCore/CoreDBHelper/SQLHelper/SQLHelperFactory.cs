@@ -415,7 +415,7 @@ namespace DBHelper.SQLHelper
         }
 
         /// <summary>
-        /// 返回多个结果集
+        /// 返回2个结果集
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="sqlKey"></param>
@@ -428,14 +428,118 @@ namespace DBHelper.SQLHelper
             var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
             try
             {
-                var t = GetSQLHelper(sqlAnaly).QueryMultiple<TFirst, TSecond, TReturn>(sqlAnaly.SqlText, CommandType.Text, paramDic, func, isUseTrans);
+                var t = GetSQLHelper(sqlAnaly).QueryMultiple(sqlAnaly.SqlText, CommandType.Text, paramDic, func, isUseTrans);
                 return t;
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
-                    return QueryMultiple<TFirst, TSecond, TReturn>(sqlKey, paramDic, func, isUseTrans, --maxretry);
+                    return QueryMultiple(sqlKey, paramDic, func, isUseTrans, --maxretry);
+                }
+                else
+                {
+                    throw ex;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+
+        /// <summary>
+        /// 返回3个结果集
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sqlKey"></param>
+        /// <param name="paramDic"></param>
+        /// <param name="total"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
+        public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TReturn>(string sqlKey, Dictionary<string, object> paramDic, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TReturn>> func, bool isUseTrans = false, int maxretry = MaxRetry)
+        {
+            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            try
+            {
+                var t = GetSQLHelper(sqlAnaly).QueryMultiple(sqlAnaly.SqlText, CommandType.Text, paramDic, func, isUseTrans);
+                return t;
+            }
+            catch (MySql.Data.MySqlClient.MySqlException ex)
+            {
+                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                {
+                    return QueryMultiple(sqlKey, paramDic, func, isUseTrans, --maxretry);
+                }
+                else
+                {
+                    throw ex;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+
+        /// <summary>
+        /// 返回4个结果集
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sqlKey"></param>
+        /// <param name="paramDic"></param>
+        /// <param name="total"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
+        public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TFourth, TReturn>(string sqlKey, Dictionary<string, object> paramDic, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TReturn>> func, bool isUseTrans = false, int maxretry = MaxRetry)
+        {
+            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            try
+            {
+                var t = GetSQLHelper(sqlAnaly).QueryMultiple(sqlAnaly.SqlText, CommandType.Text, paramDic, func, isUseTrans);
+                return t;
+            }
+            catch (MySql.Data.MySqlClient.MySqlException ex)
+            {
+                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                {
+                    return QueryMultiple(sqlKey, paramDic, func, isUseTrans, --maxretry);
+                }
+                else
+                {
+                    throw ex;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        /// <summary>
+        /// 返回5个结果集
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sqlKey"></param>
+        /// <param name="paramDic"></param>
+        /// <param name="total"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
+        public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth, TReturn>(string sqlKey, Dictionary<string, object> paramDic, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TFifth>, IEnumerable<TReturn>> func, bool isUseTrans = false, int maxretry = MaxRetry)
+        {
+            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            try
+            {
+                var t = GetSQLHelper(sqlAnaly).QueryMultiple(sqlAnaly.SqlText, CommandType.Text, paramDic, func, isUseTrans);
+                return t;
+            }
+            catch (MySql.Data.MySqlClient.MySqlException ex)
+            {
+                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                {
+                    return QueryMultiple(sqlKey, paramDic, func, isUseTrans, --maxretry);
                 }
                 else
                 {

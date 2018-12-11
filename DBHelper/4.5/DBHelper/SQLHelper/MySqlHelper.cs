@@ -461,6 +461,54 @@ namespace DBHelper.SQLHelper
                 }
             }
         }
+        public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TReturn>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TReturn>> func, bool isUseTrans)
+        {
+            using (MySqlConnection conn = new MySqlConnection(ConnectionString))
+            {
+                try
+                {
+                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    return func(result.Read<TFirst>(), result.Read<TSecond>(), result.Read<TThird>());
+                }
+                catch (Exception ex)
+                {
+                    ex.Source = ex.Source + sqlText;
+                    throw ex;
+                }
+            }
+        }
+        public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TFourth, TReturn>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TReturn>> func, bool isUseTrans)
+        {
+            using (MySqlConnection conn = new MySqlConnection(ConnectionString))
+            {
+                try
+                {
+                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    return func(result.Read<TFirst>(), result.Read<TSecond>(), result.Read<TThird>(), result.Read<TFourth>());
+                }
+                catch (Exception ex)
+                {
+                    ex.Source = ex.Source + sqlText;
+                    throw ex;
+                }
+            }
+        }
+        public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth, TReturn>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TFifth>, IEnumerable<TReturn>> func, bool isUseTrans)
+        {
+            using (MySqlConnection conn = new MySqlConnection(ConnectionString))
+            {
+                try
+                {
+                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    return func(result.Read<TFirst>(), result.Read<TSecond>(), result.Read<TThird>(), result.Read<TFourth>(), result.Read<TFifth>());
+                }
+                catch (Exception ex)
+                {
+                    ex.Source = ex.Source + sqlText;
+                    throw ex;
+                }
+            }
+        }
 
 
         #endregion Query

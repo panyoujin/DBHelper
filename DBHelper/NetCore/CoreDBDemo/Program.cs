@@ -11,6 +11,9 @@ namespace CoreDBDemo
         static void Main(string[] args)
         {
             Dictionary<string, object> dic = new Dictionary<string, object>();
+            dic["TableName"] = "table1";
+            dic["PrimaryKey"] = "primarykey1";
+            dic["LogType"] = "1,2,3,4";
             var list = SQLHelperFactory.Instance.QueryForList("GetData", dic);
             
             Console.Read();
