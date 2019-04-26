@@ -121,14 +121,7 @@ namespace DBHelper.SQLAnalytical
                 {
                     _sqlDic.Clear();
                 }
-                if (string.IsNullOrWhiteSpace(key))
-                {
-                    if (_sqlDic == null || _sqlDic.Count <= 0)
-                    {
-                        GetFileToXml(SqlConfigPath);
-                    }
-                }
-                else if (_sqlDic == null || _sqlDic.Count <= 0 || !_sqlDic.ContainsKey(key))
+                if (_sqlDic == null || _sqlDic.Count <= 0 || (!string.IsNullOrWhiteSpace(key) && !_sqlDic.ContainsKey(key)))
                 {
                     GetFileToXml(SqlConfigPath);
                 }

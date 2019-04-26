@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<HCIP.AjaxDataSetting>
+<SqlSetting>
   <Data name="GetData">
     <SqlDefinition type="MySql" ConnStringName="test_mysql">
       <SqlCommand>
@@ -21,4 +21,4 @@ SELECT `UserId`,`UserAccount`,`UserPassword` FROM `user` WHERE UserId=2;
       </SqlCommand>
     </SqlDefinition>
   </Data>
-</HCIP.AjaxDataSetting>
+</SqlSetting>
