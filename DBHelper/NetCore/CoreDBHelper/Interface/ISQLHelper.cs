@@ -123,7 +123,7 @@ namespace DBHelper.Interface
         IEnumerable<T> QueryMultipleByPage<T>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, out int total, bool isUseTrans);
 
         /// <summary>
-        /// 返回多个结果集，通过委托
+        /// 返回2个结果集
         /// </summary>
         /// <typeparam name="TFirst"></typeparam>
         /// <typeparam name="TSecond"></typeparam>
@@ -182,5 +182,70 @@ namespace DBHelper.Interface
         /// </summary>
         /// <returns></returns>
         bool TestConnection();
+
+        #region C# 8.0 返回多个结果集
+        /// <summary>
+        /// 返回结果集和数量 专用于分页
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <returns></returns>
+        (IEnumerable<T>, int) QueryMultipleByPage<T>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams);
+
+        /// <summary>
+        /// 返回2个结果集
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <returns></returns>
+        (IEnumerable<TFirst>, IEnumerable<TSecond>) QueryMultiple<TFirst, TSecond>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams);
+
+        /// <summary>
+        /// 返回3个结果集
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <typeparam name="TThird"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <returns></returns>
+        (IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>) QueryMultiple<TFirst, TSecond, TThird>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams);
+
+        /// <summary>
+        /// 返回4个结果集
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <typeparam name="TThird"></typeparam>
+        /// <typeparam name="TFourth"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <returns></returns>
+        (IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>) QueryMultiple<TFirst, TSecond, TThird, TFourth>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams);
+
+
+        /// <summary>
+        /// 返回5个结果集
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <typeparam name="TThird"></typeparam>
+        /// <typeparam name="TFourth"></typeparam>
+        /// <typeparam name="TFifth"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <returns></returns>
+        (IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TFifth>) QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams);
+
+        #endregion C# 8.0 返回多个结果集
+
     }
 }

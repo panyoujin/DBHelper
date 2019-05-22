@@ -1,15 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>jimmy.pan</Authors>
     <Description>.NET 使用正则表达式，xml解析，封装 Dapper 让SQL从代码迁移到xml文件上，并实现简单的逻辑处理</Description>
     <PackageProjectUrl>https://github.com/panyoujin/DBHelper</PackageProjectUrl>
     <NeutralLanguage></NeutralLanguage>
-    <Version>1.0.2</Version>
-    <AssemblyVersion>1.0.2.0</AssemblyVersion>
+    <Version>1.0.3</Version>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
     <FileVersion>1.0.1.0</FileVersion>
+    <PackageReleaseNotes>增加基于C# 8.0 语法 返回多个结果集</PackageReleaseNotes>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

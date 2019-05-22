@@ -563,5 +563,178 @@ namespace DBHelper.SQLHelper
         }
 
         #endregion
+
+
+
+        /// <summary>
+        /// 基于C# 8.0 语法 返回结果集和数量 专用于分页
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sqlKey"></param>
+        /// <param name="paramDic"></param>
+        /// <param name="maxretry"></param>
+        /// <returns></returns>
+        public (IEnumerable<T>, int) QueryMultipleByPage<T>(string sqlKey, Dictionary<string, object> paramDic, int maxretry = MaxRetry)
+        {
+            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            try
+            {
+                var t = GetSQLHelper(sqlAnaly).QueryMultipleByPage<T>(sqlAnaly.SqlText, CommandType.Text, paramDic);
+                return t;
+            }
+            catch (MySql.Data.MySqlClient.MySqlException ex)
+            {
+                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                {
+                    return QueryMultipleByPage<T>(sqlKey, paramDic, --maxretry);
+                }
+                else
+                {
+                    throw ex;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        /// <summary>
+        /// 基于C# 8.0 语法 返回2个结果集 
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <param name="sqlKey"></param>
+        /// <param name="paramDic"></param>
+        /// <param name="maxretry"></param>
+        /// <returns></returns>
+        public (IEnumerable<TFirst>, IEnumerable<TSecond>) QueryMultiple<TFirst, TSecond>(string sqlKey, Dictionary<string, object> paramDic, int maxretry = MaxRetry)
+        {
+            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            try
+            {
+                var t = GetSQLHelper(sqlAnaly).QueryMultiple<TFirst, TSecond>(sqlAnaly.SqlText, CommandType.Text, paramDic);
+                return t;
+            }
+            catch (MySql.Data.MySqlClient.MySqlException ex)
+            {
+                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                {
+                    return QueryMultiple<TFirst, TSecond>(sqlKey, paramDic, --maxretry);
+                }
+                else
+                {
+                    throw ex;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        /// <summary>
+        /// 基于C# 8.0 语法 返回3个结果集 
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <typeparam name="TThird"></typeparam>
+        /// <param name="sqlKey"></param>
+        /// <param name="paramDic"></param>
+        /// <param name="maxretry"></param>
+        /// <returns></returns>
+        public (IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>) QueryMultiple<TFirst, TSecond, TThird>(string sqlKey, Dictionary<string, object> paramDic, int maxretry = MaxRetry)
+        {
+            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            try
+            {
+                var t = GetSQLHelper(sqlAnaly).QueryMultiple<TFirst, TSecond, TThird>(sqlAnaly.SqlText, CommandType.Text, paramDic);
+                return t;
+            }
+            catch (MySql.Data.MySqlClient.MySqlException ex)
+            {
+                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                {
+                    return QueryMultiple<TFirst, TSecond, TThird>(sqlKey, paramDic, --maxretry);
+                }
+                else
+                {
+                    throw ex;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        /// <summary>
+        /// 基于C# 8.0 语法 返回4个结果集 
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <typeparam name="TThird"></typeparam>
+        /// <typeparam name="TFourth"></typeparam>
+        /// <param name="sqlKey"></param>
+        /// <param name="paramDic"></param>
+        /// <param name="maxretry"></param>
+        /// <returns></returns>
+        public (IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>) QueryMultiple<TFirst, TSecond, TThird, TFourth>(string sqlKey, Dictionary<string, object> paramDic, int maxretry = MaxRetry)
+        {
+            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            try
+            {
+                var t = GetSQLHelper(sqlAnaly).QueryMultiple<TFirst, TSecond, TThird, TFourth>(sqlAnaly.SqlText, CommandType.Text, paramDic);
+                return t;
+            }
+            catch (MySql.Data.MySqlClient.MySqlException ex)
+            {
+                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                {
+                    return QueryMultiple<TFirst, TSecond, TThird, TFourth>(sqlKey, paramDic, --maxretry);
+                }
+                else
+                {
+                    throw ex;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        /// <summary>
+        /// 基于C# 8.0 语法 返回5个结果集 
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <typeparam name="TThird"></typeparam>
+        /// <typeparam name="TFourth"></typeparam>
+        /// <typeparam name="TFifth"></typeparam>
+        /// <param name="sqlKey"></param>
+        /// <param name="paramDic"></param>
+        /// <param name="maxretry"></param>
+        /// <returns></returns>
+        public (IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TFifth>) QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth>(string sqlKey, Dictionary<string, object> paramDic, int maxretry = MaxRetry)
+        {
+            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            try
+            {
+                var t = GetSQLHelper(sqlAnaly).QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth>(sqlAnaly.SqlText, CommandType.Text, paramDic);
+                return t;
+            }
+            catch (MySql.Data.MySqlClient.MySqlException ex)
+            {
+                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                {
+                    return QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth>(sqlKey, paramDic, --maxretry);
+                }
+                else
+                {
+                    throw ex;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
     }
 }
