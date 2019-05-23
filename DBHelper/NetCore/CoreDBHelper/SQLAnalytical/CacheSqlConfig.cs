@@ -5,6 +5,7 @@ using DBHelper.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Xml;
 
 namespace DBHelper.SQLAnalytical
@@ -78,6 +79,35 @@ namespace DBHelper.SQLAnalytical
                 throw new Exception(string.Format("配置中找不到KEY：{0}", key));
             }
             Dictionary<string, object> keyValueTemp = ReplaceInjection(keyValue);
+            SqlDefinition sqlDefinition = new SqlDefinition(_sqlAnalyModelDic[tempKey]);
+            var sqlAnaly = sqlDefinition.SqlAnaly(keyValueTemp);
+            return sqlAnaly;
+        }
+        /// <summary>
+        /// 通过指定的KEY获取SQL
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="isParam"></param>
+        /// <returns></returns>
+        public SqlAnalyModel GetSqlAnalyByKey(string key, List<Dictionary<string, object>> keyValue)
+        {
+
+            var tempKey = key.ToLower();
+            //如果缓存的SQL为空，或者在缓存中找不到对应的KEY 就从文件中加载
+            if (_sqlDic == null || _sqlDic.Count <= 0 || !_sqlDic.ContainsKey(tempKey))
+            {
+                SqlConfigInit(tempKey);
+            }
+            if (!_sqlDic.ContainsKey(tempKey))
+            {
+                //return new SqlAnalyModel() { SqlText = key };
+                throw new Exception(string.Format("配置中找不到KEY：{0}", key));
+            }
+            Dictionary<string, object> keyValueTemp = keyValue.FirstOrDefault();
+            if (_sqlAnalyModelDic[tempKey].SqlText.IndexOf("<R%=") >= 0)
+            {
+                throw new Exception("批量执行不能用在直接替换的场景");
+            }
             SqlDefinition sqlDefinition = new SqlDefinition(_sqlAnalyModelDic[tempKey]);
             var sqlAnaly = sqlDefinition.SqlAnaly(keyValueTemp);
             return sqlAnaly;

@@ -78,6 +78,63 @@ namespace DBHelper.SQLHelper
             return result;
         }
 
+
+        /// <summary>
+        /// 批量語句
+        /// </summary>
+        /// <param name="sqlText">数据库命令：存储过程名或sql语句</param>
+        /// <param name="cmdType">命令类型</param>
+        /// <param name="dictParams">sql命令的参数数组（可为空）</param>
+        /// <returns></returns>
+        public int ExecuteNonQuery(string sqlText, CommandType cmdType, IEnumerable<IDictionary<string, object>> dictParams)
+        {
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                try
+                {
+                    return conn.Execute(sqlText, dictParams);
+                }
+                catch (Exception ex)
+                {
+                    ex.Source = ex.Source + sqlText;
+                    throw ex;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 批量語句
+        /// </summary>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
+        public int ExecuteNonQuery(string sqlText, CommandType cmdType, IEnumerable<IDictionary<string, object>> dictParams, bool isUseTrans)
+        {
+            if (!isUseTrans)
+            {
+                return ExecuteNonQuery(sqlText, cmdType, dictParams);
+            }
+            var result = 0;
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                conn.Open();
+                SqlTransaction trans = conn.BeginTransaction();
+                try
+                {
+                    result = conn.Execute(sqlText, dictParams, trans);
+                    trans.Commit();
+                }
+                catch (Exception ex)
+                {
+                    trans.Rollback();
+                    ex.Source = ex.Source + sqlText;
+                    throw ex;
+                }
+            }
+            return result;
+        }
         #endregion
 
         #region ExecuteScalar

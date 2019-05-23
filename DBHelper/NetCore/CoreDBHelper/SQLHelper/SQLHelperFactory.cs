@@ -105,6 +105,37 @@ namespace DBHelper.SQLHelper
             }
         }
         /// <summary>
+        /// 执行批量语句，当SQL里出现直接替换语句时不适用 
+        /// </summary>
+        /// <param name="sqlKey"></param>
+        /// <param name="paramDic"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns>返回影响行数</returns>
+        public int ExecuteNonQuery(string sqlKey, List<Dictionary<string, object>> paramDic, bool isUseTrans = false, int maxretry = MaxRetry)
+        {
+            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            //return GetSQLHelper(sqlAnaly).ExecuteNonQuery(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
+            try
+            {
+                return GetSQLHelper(sqlAnaly).ExecuteNonQuery(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
+            }
+            catch (MySql.Data.MySqlClient.MySqlException ex)
+            {
+                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                {
+                    return ExecuteNonQuery(sqlKey, paramDic, isUseTrans, --maxretry);
+                }
+                else
+                {
+                    throw ex;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        /// <summary>
         /// 返回一条数据
         /// </summary>
         /// <param name="sqlKey"></param>

@@ -15,6 +15,9 @@ namespace DBHelper.SQLHelper
         #region Fields
 
         private string _connectionString;
+        /// <summary>
+        /// 
+        /// </summary>
         public string ConnectionString { get => _connectionString; set => _connectionString = value; }
 
         //private static readonly BindingFlags bf = BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static | BindingFlags.NonPublic;
@@ -24,9 +27,9 @@ namespace DBHelper.SQLHelper
         #region ExecuteNonQuery
 
         /// <summary>
-        /// 执行sql命令，返回影响行数 (启用事务)
+        /// 执行sql命令，返回影响行数
         /// </summary>
-        /// <param name="strSqlConn">数据库连接字符串</param>
+        
         /// <param name="sqlText">数据库命令：存储过程名或sql语句</param>
         /// <param name="cmdType">命令类型</param>
         /// <param name="dictParams">sql命令的参数数组（可为空）</param>
@@ -50,7 +53,6 @@ namespace DBHelper.SQLHelper
         /// <summary>
         /// 执行sql命令，返回影响行数 
         /// </summary>
-        /// <param name="strSqlConn">数据库连接字符串</param>
         /// <param name="sqlText">数据库命令：存储过程名或sql语句</param>
         /// <param name="cmdType">命令类型</param>
         /// <param name="dictParams">sql命令的参数数组（可为空）</param>
@@ -82,17 +84,76 @@ namespace DBHelper.SQLHelper
             return result;
         }
 
+
+
+        /// <summary>
+        /// 批量語句
+        /// </summary>
+        /// <param name="sqlText">数据库命令：存储过程名或sql语句</param>
+        /// <param name="cmdType">命令类型</param>
+        /// <param name="dictParams">sql命令的参数数组（可为空）</param>
+        /// <returns></returns>
+        public int ExecuteNonQuery(string sqlText, CommandType cmdType, IEnumerable<IDictionary<string, object>> dictParams)
+        {
+            using (MySqlConnection conn = new MySqlConnection(ConnectionString))
+            {
+                try
+                {
+                    return conn.Execute(sqlText, dictParams);
+                }
+                catch (Exception ex)
+                {
+                    ex.Source = ex.Source + sqlText;
+                    throw ex;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 批量語句
+        /// </summary>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
+        public int ExecuteNonQuery(string sqlText, CommandType cmdType, IEnumerable<IDictionary<string, object>> dictParams, bool isUseTrans)
+        {
+            if (!isUseTrans)
+            {
+                return ExecuteNonQuery(sqlText, cmdType, dictParams);
+            }
+            var result = 0;
+            using (MySqlConnection conn = new MySqlConnection(ConnectionString))
+            {
+                conn.Open();
+                MySqlTransaction trans = conn.BeginTransaction();
+                try
+                {
+                    result = conn.Execute(sqlText, dictParams, trans);
+                    trans.Commit();
+                }
+                catch (Exception ex)
+                {
+                    trans.Rollback();
+                    ex.Source = ex.Source + sqlText;
+                    throw ex;
+                }
+            }
+            return result;
+        }
+
         #endregion
 
         #region ExecuteScalar
 
         /// <summary>
-        /// 执行sql命令，返回第一行第一列（启用事务）
+        /// 执行sql命令，返回第一行第一列
         /// </summary>
-        /// <param name="strSqlConn">数据库连接字符串</param>
+        
         /// <param name="sqlText">数据库命令：存储过程名或sql语句</param>
         /// <param name="cmdType">命令类型</param>
-        /// <param name="sqlParams">sql命令参数 （可为空）</param>
+        /// <param name="dictParams">sql命令参数 （可为空）</param>
         /// <returns></returns>
         public object ExecuteScalar(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams)
         {
@@ -110,12 +171,12 @@ namespace DBHelper.SQLHelper
             }
         }
         /// <summary>
-        /// 执行sql命令，返回第一行第一列（启用事务）
+        /// 执行sql命令，返回第一行第一列
         /// </summary>
-        /// <param name="strSqlConn">数据库连接字符串</param>
+        
         /// <param name="sqlText">数据库命令：存储过程名或sql语句</param>
         /// <param name="cmdType">命令类型</param>
-        /// <param name="sqlParams">sql命令参数 （可为空）</param>
+        /// <param name="dictParams">sql命令参数 （可为空）</param>
         /// <returns></returns>
         public T ExecuteScalar<T>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams)
         {
@@ -136,10 +197,10 @@ namespace DBHelper.SQLHelper
         /// <summary>
         /// 执行sql命令，返回第一行第一列
         /// </summary>
-        /// <param name="strSqlConn">数据库连接字符串</param>
+        
         /// <param name="sqlText">数据库命令：存储过程名或sql语句</param>
         /// <param name="cmdType">命令类型</param>
-        /// <param name="sqlParams">sql命令参数 （可为空）</param>
+        /// <param name="dictParams">sql命令参数 （可为空）</param>
         /// <param name="isUseTrans">是否使用事务</param>
         /// <returns></returns>
         public object ExecuteScalar(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, bool isUseTrans)
@@ -170,10 +231,10 @@ namespace DBHelper.SQLHelper
         /// <summary>
         /// 执行sql命令，返回第一行第一列
         /// </summary>
-        /// <param name="strSqlConn">数据库连接字符串</param>
+        
         /// <param name="sqlText">数据库命令：存储过程名或sql语句</param>
         /// <param name="cmdType">命令类型</param>
-        /// <param name="sqlParams">sql命令参数 （可为空）</param>
+        /// <param name="dictParams">sql命令参数 （可为空）</param>
         /// <param name="isUseTrans">是否使用事务</param>
         /// <returns></returns>
         public T ExecuteScalar<T>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, bool isUseTrans)
@@ -205,7 +266,13 @@ namespace DBHelper.SQLHelper
 
         #region ExecuteReader
 
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <returns></returns>
         public IDataReader ExecuteReader(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams)
         {
 
@@ -227,7 +294,13 @@ namespace DBHelper.SQLHelper
 
         #region Query
 
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <returns></returns>
         public IEnumerable<dynamic> QueryForList(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams)
         {
             using (MySqlConnection conn = new MySqlConnection(ConnectionString))
@@ -243,6 +316,14 @@ namespace DBHelper.SQLHelper
                 }
             }
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
         public IEnumerable<dynamic> QueryForList(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, bool isUseTrans)
         {
             if (!isUseTrans)
@@ -268,6 +349,14 @@ namespace DBHelper.SQLHelper
             }
             return result;
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <returns></returns>
 
         public IEnumerable<T> QueryForList<T>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams)
         {
@@ -284,6 +373,15 @@ namespace DBHelper.SQLHelper
                 }
             }
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
         public IEnumerable<T> QueryForList<T>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, bool isUseTrans)
         {
             if (!isUseTrans)
@@ -310,6 +408,13 @@ namespace DBHelper.SQLHelper
             }
             return result;
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <returns></returns>
 
         public dynamic QueryForObject(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams)
         {
@@ -326,6 +431,14 @@ namespace DBHelper.SQLHelper
                 }
             }
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
         public dynamic QueryForObject(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, bool isUseTrans)
         {
             if (!isUseTrans)
@@ -352,6 +465,14 @@ namespace DBHelper.SQLHelper
             }
             return result;
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <returns></returns>
 
         public T QueryForObject<T>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams)
         {
@@ -368,6 +489,15 @@ namespace DBHelper.SQLHelper
                 }
             }
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
 
         public T QueryForObject<T>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, bool isUseTrans)
         {
@@ -398,7 +528,15 @@ namespace DBHelper.SQLHelper
 
 
 
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <param name="total"></param>
+        /// <returns></returns>
         public IEnumerable<T> QueryMultiple<T>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, out int total)
         {
             using (MySqlConnection conn = new MySqlConnection(ConnectionString))
@@ -418,7 +556,16 @@ namespace DBHelper.SQLHelper
                 }
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <param name="total"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
         public IEnumerable<T> QueryMultipleByPage<T>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, out int total, bool isUseTrans)
         {
             if (!isUseTrans)
@@ -448,7 +595,18 @@ namespace DBHelper.SQLHelper
             return list;
         }
 
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <typeparam name="TReturn"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <param name="func"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
         public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TReturn>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TReturn>> func, bool isUseTrans)
         {
             using (MySqlConnection conn = new MySqlConnection(ConnectionString))
@@ -465,7 +623,19 @@ namespace DBHelper.SQLHelper
                 }
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <typeparam name="TThird"></typeparam>
+        /// <typeparam name="TReturn"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <param name="func"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
         public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TReturn>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TReturn>> func, bool isUseTrans)
         {
             using (MySqlConnection conn = new MySqlConnection(ConnectionString))
@@ -482,6 +652,20 @@ namespace DBHelper.SQLHelper
                 }
             }
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <typeparam name="TThird"></typeparam>
+        /// <typeparam name="TFourth"></typeparam>
+        /// <typeparam name="TReturn"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <param name="func"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
         public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TFourth, TReturn>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TReturn>> func, bool isUseTrans)
         {
             using (MySqlConnection conn = new MySqlConnection(ConnectionString))
@@ -498,6 +682,21 @@ namespace DBHelper.SQLHelper
                 }
             }
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <typeparam name="TThird"></typeparam>
+        /// <typeparam name="TFourth"></typeparam>
+        /// <typeparam name="TFifth"></typeparam>
+        /// <typeparam name="TReturn"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <param name="func"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
         public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth, TReturn>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TFifth>, IEnumerable<TReturn>> func, bool isUseTrans)
         {
             using (MySqlConnection conn = new MySqlConnection(ConnectionString))
@@ -674,8 +873,5 @@ namespace DBHelper.SQLHelper
                 }
             }
         }
-
-
-
     }
 }
