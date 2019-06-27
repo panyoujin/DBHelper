@@ -93,7 +93,15 @@ namespace DBHelper.SQLAnalytical
             SqlAnalyModel model = new SqlAnalyModel();
             GetAllParseItem(keyValue);
             model.SqlText = SqlCommand;
-            model.SqlConnStringName = SqlConnStringName;
+            if (keyValue != null && keyValue.ContainsKey("ConnectionPrefix"))
+            {
+                model.SqlConnStringName = keyValue["ConnectionPrefix"] + SqlConnStringName;
+            }
+            else
+            {
+                model.SqlConnStringName = SqlConnStringName;
+            }
+            //model.SqlConnStringName = SqlConnStringName;
             model.DBType = SqlDBType;
             model.Assembly = Assembly;
             model.ModelClassName = ModelClassName;

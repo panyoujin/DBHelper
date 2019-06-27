@@ -1,12 +1,10 @@
 ﻿
 using Dapper;
+using DBHelper.Interface;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Reflection;
-using DBHelper.Helper;
-using DBHelper.Interface;
 
 namespace DBHelper.SQLHelper
 {
@@ -80,6 +78,63 @@ namespace DBHelper.SQLHelper
             return result;
         }
 
+
+        /// <summary>
+        /// 批量語句
+        /// </summary>
+        /// <param name="sqlText">数据库命令：存储过程名或sql语句</param>
+        /// <param name="cmdType">命令类型</param>
+        /// <param name="dictParams">sql命令的参数数组（可为空）</param>
+        /// <returns></returns>
+        public int ExecuteNonQuery(string sqlText, CommandType cmdType, IEnumerable<IDictionary<string, object>> dictParams)
+        {
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                try
+                {
+                    return conn.Execute(sqlText, dictParams);
+                }
+                catch (Exception ex)
+                {
+                    ex.Source = ex.Source + sqlText;
+                    throw ex;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 批量語句
+        /// </summary>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <param name="isUseTrans"></param>
+        /// <returns></returns>
+        public int ExecuteNonQuery(string sqlText, CommandType cmdType, IEnumerable<IDictionary<string, object>> dictParams, bool isUseTrans)
+        {
+            if (!isUseTrans)
+            {
+                return ExecuteNonQuery(sqlText, cmdType, dictParams);
+            }
+            var result = 0;
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                conn.Open();
+                SqlTransaction trans = conn.BeginTransaction();
+                try
+                {
+                    result = conn.Execute(sqlText, dictParams, trans);
+                    trans.Commit();
+                }
+                catch (Exception ex)
+                {
+                    trans.Rollback();
+                    ex.Source = ex.Source + sqlText;
+                    throw ex;
+                }
+            }
+            return result;
+        }
         #endregion
 
         #region ExecuteScalar
@@ -536,5 +591,137 @@ namespace DBHelper.SQLHelper
         }
 
         #endregion
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <returns></returns>
+        public (IEnumerable<T>, int) QueryMultipleByPage<T>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams)
+        {
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                try
+                {
+                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    return (result.Read<T>(), result.ReadFirst<int>());
+                }
+                catch (Exception ex)
+                {
+                    ex.Source = ex.Source + sqlText;
+                    throw ex;
+                }
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <returns></returns>
+        public (IEnumerable<TFirst>, IEnumerable<TSecond>) QueryMultiple<TFirst, TSecond>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams)
+        {
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                try
+                {
+                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    return (result.Read<TFirst>(), result.Read<TSecond>());
+                }
+                catch (Exception ex)
+                {
+                    ex.Source = ex.Source + sqlText;
+                    throw ex;
+                }
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <typeparam name="TThird"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <returns></returns>
+        public (IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>) QueryMultiple<TFirst, TSecond, TThird>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams)
+        {
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                try
+                {
+                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    return (result.Read<TFirst>(), result.Read<TSecond>(), result.Read<TThird>());
+                }
+                catch (Exception ex)
+                {
+                    ex.Source = ex.Source + sqlText;
+                    throw ex;
+                }
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <typeparam name="TThird"></typeparam>
+        /// <typeparam name="TFourth"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <returns></returns>
+        public (IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>) QueryMultiple<TFirst, TSecond, TThird, TFourth>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams)
+        {
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                try
+                {
+                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    return (result.Read<TFirst>(), result.Read<TSecond>(), result.Read<TThird>(), result.Read<TFourth>());
+                }
+                catch (Exception ex)
+                {
+                    ex.Source = ex.Source + sqlText;
+                    throw ex;
+                }
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TFirst"></typeparam>
+        /// <typeparam name="TSecond"></typeparam>
+        /// <typeparam name="TThird"></typeparam>
+        /// <typeparam name="TFourth"></typeparam>
+        /// <typeparam name="TFifth"></typeparam>
+        /// <param name="sqlText"></param>
+        /// <param name="cmdType"></param>
+        /// <param name="dictParams"></param>
+        /// <returns></returns>
+        public (IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TFifth>) QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth>(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams)
+        {
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                try
+                {
+                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    return (result.Read<TFirst>(), result.Read<TSecond>(), result.Read<TThird>(), result.Read<TFourth>(), result.Read<TFifth>());
+                }
+                catch (Exception ex)
+                {
+                    ex.Source = ex.Source + sqlText;
+                    throw ex;
+                }
+            }
+        }
     }
 }
