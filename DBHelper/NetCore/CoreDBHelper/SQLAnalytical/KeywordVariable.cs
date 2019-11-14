@@ -41,37 +41,53 @@ namespace DBHelper.SQLAnalytical
         private readonly string[] sourceArray = { "querystring", "request", "session", "cookie", "cache", "framework" };
 
         #region property define
+        /// <summary>
+        /// 
+        /// </summary>
         public string Keyword
         {
             get;
             set;
         }
         private readonly VariableSource _source;
+        /// <summary>
+        /// 
+        /// </summary>
         public VariableSource Source
         {
             get { return _source; }
         }
         private readonly string _keyname;
+        /// <summary>
+        /// 
+        /// </summary>
         public string KeyName
         {
             get { return _keyname; }
         }
+        /// <summary>
+        /// 
+        /// </summary>
         public object Value
         {
             get;
             set;
         }
         /// <summary>
-        /// 是否处理Null的情况
+        /// 参数中找不到Key时是否返回空字符串
         /// </summary>
-        public bool IsNull
+        public bool IsNotKeyReturnEmpty
         {
             get;
             set;
         }
         #endregion
 
-        #region ctor..
+        #region ctor
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="keyword"></param>
         public KeywordVariable(string keyword)
         {
             this.Keyword = keyword;

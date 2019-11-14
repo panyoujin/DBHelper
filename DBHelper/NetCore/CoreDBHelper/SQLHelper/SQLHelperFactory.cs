@@ -357,6 +357,10 @@ namespace DBHelper.SQLHelper
         /// <returns></returns>
         public dynamic QueryForObject(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = MaxRetry)
         {
+            if (paramDic == null)
+            {
+                paramDic = new Dictionary<string, object>();
+            }
             var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
             try
             {
