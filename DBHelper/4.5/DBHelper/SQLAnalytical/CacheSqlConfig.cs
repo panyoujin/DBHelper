@@ -75,8 +75,8 @@ namespace DBHelper.SQLAnalytical
             }
             if (!_sqlDic.ContainsKey(tempKey))
             {
-                //return new SqlAnalyModel() { SqlText = key };
-                throw new Exception(string.Format("配置中找不到KEY：{0}", key));
+                return new SqlAnalyModel() { SqlText = key };
+
             }
             Dictionary<string, object> keyValueTemp = ReplaceInjection(keyValue);
             SqlDefinition sqlDefinition = new SqlDefinition(_sqlAnalyModelDic[tempKey]);

@@ -42,13 +42,23 @@ namespace DBHelper.SQLHelper
         /// </summary>
         public ConcurrentDictionary<string, string> ConnectionStringsDic = new ConcurrentDictionary<string, string>();
 
+        /// <summary>
+        /// 连接字符串缓存 使用非app.config配置时需要在程序入口处进行初始化
+        /// </summary>
+        public string DefaultConnectionStrings;
+
         private ISQLHelper GetSQLHelper(SqlAnalyModel model)
         {
-            if (model == null || string.IsNullOrWhiteSpace(model.SqlConnStringName))
+            if (model == null)
             {
                 throw new Exception(string.Format("数据库连接配置不正确"));
             }
+
             ISQLHelper sqlHelper = null;
+            if (string.IsNullOrWhiteSpace(model.DBType))
+            {
+                model.DBType = "mysql";
+            }
             switch (model.DBType.ToLower())
             {
                 case "mysql":
@@ -58,7 +68,8 @@ namespace DBHelper.SQLHelper
                     sqlHelper = new SqlServerHelper();
                     break;
                 default:
-                    throw new Exception("暂不支持" + model.DBType + "数据库");
+                    sqlHelper = new MySqlHelper();
+                    break;
             }
             if (!ConnectionStringsDic.ContainsKey(model.SqlConnStringName))
             {
@@ -68,9 +79,17 @@ namespace DBHelper.SQLHelper
             sqlHelper.ConnectionString = ConnectionStringsDic[model.SqlConnStringName];
             if (string.IsNullOrWhiteSpace(sqlHelper.ConnectionString))
             {
-                throw new Exception(string.Format("数据库连接地址【{0}】不正确", model.SqlConnStringName));
+                if (string.IsNullOrWhiteSpace(DefaultConnectionStrings))
+                {
+                    throw new Exception(string.Format("数据库连接配置不正确"));
+                }
+                sqlHelper.ConnectionString = DefaultConnectionStrings;
             }
 
+            if (model.Timeout >= 0)
+            {
+                sqlHelper.Timeout = model.Timeout;
+            }
             return sqlHelper;
         }
         /// <summary>
@@ -80,7 +99,7 @@ namespace DBHelper.SQLHelper
         /// <param name="paramDic"></param>
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
-        public int ExecuteNonQuery(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = MaxRetry)
+        public int ExecuteNonQuery(string sqlKey, Dictionary<string, object> paramDic = null, bool isUseTrans = false, int maxretry = MaxRetry)
         {
             var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
             //return GetSQLHelper(sqlAnaly).ExecuteNonQuery(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
@@ -593,6 +612,39 @@ namespace DBHelper.SQLHelper
             return GetSQLHelper(sqlAnaly).TestConnection();
         }
 
+        /// <summary>
+        /// Test Connection
+        /// </summary>
+        /// <returns></returns>
+        public bool TestConnection(string connStringName = "", string dbType = "mysql")
+        {
+            ISQLHelper sqlHelper = null;
+            switch (dbType.ToLower())
+            {
+                case "mysql":
+                    sqlHelper = new MySqlHelper();
+                    break;
+                case "sqlserver":
+                    sqlHelper = new SqlServerHelper();
+                    break;
+                default:
+                    sqlHelper = new MySqlHelper();
+                    break;
+            }
+            if (!string.IsNullOrWhiteSpace(connStringName) && !ConnectionStringsDic.ContainsKey(connStringName))
+            {
+                ConnectionStringsDic[connStringName] = System.Configuration.ConfigurationManager.ConnectionStrings[connStringName].ConnectionString;
+            }
+            if (string.IsNullOrWhiteSpace(connStringName))
+            {
+                sqlHelper.ConnectionString = DefaultConnectionStrings;
+            }
+            else
+            {
+                sqlHelper.ConnectionString = ConnectionStringsDic[connStringName];
+            }
+            return sqlHelper.TestConnection();
+        }
         #endregion
 
 

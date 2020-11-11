@@ -7,6 +7,7 @@ namespace DBHelper.Interface
     public interface ISQLHelper
     {
         string ConnectionString { get; set; }
+        int Timeout { get; set; }
         /// <summary>
         /// 执行sql命令，返回影响行数
         /// </summary>

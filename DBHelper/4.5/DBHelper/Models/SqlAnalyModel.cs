@@ -24,6 +24,14 @@ namespace DBHelper.Models
         /// </summary>
         public string Assembly { get; set; }
         /// <summary>
+        /// 增加父key
+        /// </summary>
+        public string ParentKey { get; set; }
+        /// <summary>
+        /// 父key
+        /// </summary>
+        public SqlAnalyModel ParentAnaly { get; set; }
+        /// <summary>
         /// ModelClassName
         /// </summary>
         public string ModelClassName { get; set; }
@@ -39,6 +47,11 @@ namespace DBHelper.Models
         /// 直接使用参数
         /// </summary>
         public MatchCollection ParamMC { get; set; }
+        /// <summary>
+        /// 超时设置
+        /// </summary>
+        public int Timeout { get; set; } = -1;
+
 
         public static SqlAnalyModel XmlToSqlAnalyModel(XmlNode node)
         {
@@ -49,6 +62,15 @@ namespace DBHelper.Models
             model.SqlConnStringName = XmlUtility.getNodeAttributeStringValue(node, "ConnStringName", ConfigHelper.GetConfigValue("ConnStringName", "DbContext"));
             model.Assembly = XmlUtility.getNodeAttributeStringValue(node, "Assembly");
             model.ModelClassName = XmlUtility.getNodeAttributeStringValue(node, "ModelClassName");
+            model.ParentKey = XmlUtility.getNodeAttributeStringValue(node, "ParentKey");
+            if (!string.IsNullOrWhiteSpace(model.ParentKey))
+            {
+                model.ParentKey = model.ParentKey.ToLower();
+            }
+            if (!string.IsNullOrWhiteSpace(XmlUtility.getNodeAttributeStringValue(node, "Timeout")))
+            {
+                model.Timeout = XmlUtility.getNodeAttributeIntValue(node, "Timeout");
+            }
             var sqltext = XmlUtility.getNodeStringValue(node["SqlCommand"]);
             Regex regKeyword = new Regex("<%=.*?%>");
             model.CanEmptyMC = regKeyword.Matches(sqltext);

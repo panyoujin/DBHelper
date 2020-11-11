@@ -29,10 +29,15 @@ namespace DBHelper.SQLAnalytical
                 this.SqlConnStringName = XmlUtility.getNodeAttributeStringValue(node, "ConnStringName", ConfigHelper.GetConfigValue("ConnStringName", "DbContext"));
                 this.Assembly = XmlUtility.getNodeAttributeStringValue(node, "Assembly");
                 this.ModelClassName = XmlUtility.getNodeAttributeStringValue(node, "ModelClassName");
+                this.ParentKey = XmlUtility.getNodeAttributeStringValue(node, "ParentKey");
             }
         }
         public SqlDefinition(SqlAnalyModel sqlAnaly)
         {
+            if (sqlAnaly.ParentAnaly != null)
+            {
+                this.ParentSqlDefinition = new SqlDefinition(sqlAnaly.ParentAnaly);
+            }
             this.SqlCommand = sqlAnaly.SqlText;
             this.SqlDBType = sqlAnaly.DBType;
             this.SqlConnStringName = sqlAnaly.SqlConnStringName;
@@ -41,6 +46,8 @@ namespace DBHelper.SQLAnalytical
             this.CanEmptyMC = sqlAnaly.CanEmptyMC;
             this.ReplaceMC = sqlAnaly.ReplaceMC;
             this.ParamMC = sqlAnaly.ParamMC;
+            this.ParentKey = sqlAnaly.ParentKey;
+            this.Timeout = sqlAnaly.Timeout;
         }
         #endregion
 
@@ -73,6 +80,13 @@ namespace DBHelper.SQLAnalytical
         private string ModelClassName { get; set; }
         private string SqlConnStringName { get; set; }
         private string SqlDBType { get; set; }
+        private string ParentKey { get; set; }
+
+
+        /// <summary>
+        /// 父
+        /// </summary>
+        public SqlDefinition ParentSqlDefinition { get; set; }
 
         /// <summary>
         /// 可空
@@ -86,6 +100,10 @@ namespace DBHelper.SQLAnalytical
         /// 直接使用参数
         /// </summary>
         public MatchCollection ParamMC { get; set; }
+        /// <summary>
+        /// 超时设置
+        /// </summary>
+        public int Timeout { get; set; } = -1;
 
 
         public SqlAnalyModel SqlAnaly(Dictionary<string, object> keyValue)
@@ -105,6 +123,20 @@ namespace DBHelper.SQLAnalytical
             model.DBType = SqlDBType;
             model.Assembly = Assembly;
             model.ModelClassName = ModelClassName;
+            model.Timeout = Timeout;
+            if (this.ParentSqlDefinition != null)
+            {
+                var parentModel = this.ParentSqlDefinition.SqlAnaly(keyValue);
+                if (parentModel.SqlText.Trim().LastIndexOf(';') == parentModel.SqlText.Trim().Length - 1)
+                {
+                    model.SqlText = parentModel.SqlText + model.SqlText;
+                }
+                else
+                {
+                    //最后位置找不到 ; 则自动补齐
+                    model.SqlText = parentModel.SqlText + ";" + model.SqlText;
+                }
+            }
             return model;
         }
         //public SqlAnalyModel SqlAnaly(Dictionary<string, object> keyValue)

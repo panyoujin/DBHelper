@@ -19,6 +19,7 @@ namespace DBHelper.SQLHelper
         /// 
         /// </summary>
         public string ConnectionString { get => _connectionString; set => _connectionString = value; }
+        public int Timeout { get; set; } = 30;
 
         //private static readonly BindingFlags bf = BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static | BindingFlags.NonPublic;
 
@@ -40,7 +41,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    return conn.Execute(sqlText, dictParams);
+                    return conn.Execute(sqlText, dictParams, null, Timeout);
                 }
                 catch (Exception ex)
                 {
@@ -71,7 +72,7 @@ namespace DBHelper.SQLHelper
                 MySqlTransaction trans = conn.BeginTransaction();
                 try
                 {
-                    result = conn.Execute(sqlText, dictParams, trans);
+                    result = conn.Execute(sqlText, dictParams, trans, Timeout);
                     trans.Commit();
                 }
                 catch (Exception ex)
@@ -99,7 +100,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    return conn.Execute(sqlText, dictParams);
+                    return conn.Execute(sqlText, dictParams, null, Timeout);
                 }
                 catch (Exception ex)
                 {
@@ -130,7 +131,7 @@ namespace DBHelper.SQLHelper
                 MySqlTransaction trans = conn.BeginTransaction();
                 try
                 {
-                    result = conn.Execute(sqlText, dictParams, trans);
+                    result = conn.Execute(sqlText, dictParams, trans, Timeout);
                     trans.Commit();
                 }
                 catch (Exception ex)
@@ -161,7 +162,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    return conn.ExecuteScalar(sqlText, dictParams);
+                    return conn.ExecuteScalar(sqlText, dictParams, null, Timeout);
                 }
                 catch (Exception ex)
                 {
@@ -184,7 +185,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    return conn.ExecuteScalar<T>(sqlText, dictParams);
+                    return conn.ExecuteScalar<T>(sqlText, dictParams, null, Timeout);
                 }
                 catch (Exception ex)
                 {
@@ -216,7 +217,7 @@ namespace DBHelper.SQLHelper
                 MySqlTransaction trans = conn.BeginTransaction();
                 try
                 {
-                    result = conn.ExecuteScalar(sqlText, dictParams, trans);
+                    result = conn.ExecuteScalar(sqlText, dictParams, trans, Timeout);
                     trans.Commit();
                 }
                 catch (Exception ex)
@@ -250,7 +251,7 @@ namespace DBHelper.SQLHelper
                 MySqlTransaction trans = conn.BeginTransaction();
                 try
                 {
-                    t = conn.ExecuteScalar<T>(sqlText, dictParams, trans);
+                    t = conn.ExecuteScalar<T>(sqlText, dictParams, trans, Timeout);
                     trans.Commit();
                 }
                 catch (Exception ex)
@@ -280,7 +281,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    return conn.ExecuteReader(sqlText, dictParams);
+                    return conn.ExecuteReader(sqlText, dictParams, null, Timeout);
                 }
                 catch (Exception ex)
                 {
@@ -307,7 +308,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    return conn.Query(sqlText, dictParams);
+                    return conn.Query(sqlText, dictParams, null, true, Timeout);
                 }
                 catch (Exception ex)
                 {
@@ -337,7 +338,7 @@ namespace DBHelper.SQLHelper
                 MySqlTransaction trans = conn.BeginTransaction();
                 try
                 {
-                    result = conn.Query(sqlText, dictParams, trans);
+                    result = conn.Query(sqlText, dictParams, trans, true, Timeout);
                     trans.Commit();
                 }
                 catch (Exception ex)
@@ -364,7 +365,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    return conn.Query<T>(sqlText, dictParams);
+                    return conn.Query<T>(sqlText, dictParams, null, true, Timeout);
                 }
                 catch (Exception ex)
                 {
@@ -396,7 +397,7 @@ namespace DBHelper.SQLHelper
                 MySqlTransaction trans = conn.BeginTransaction();
                 try
                 {
-                    result = conn.Query<T>(sqlText, dictParams, trans);
+                    result = conn.Query<T>(sqlText, dictParams, trans, true, Timeout);
                     trans.Commit();
                 }
                 catch (Exception ex)
@@ -422,7 +423,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    return conn.QueryFirstOrDefault(sqlText, dictParams);
+                    return conn.QueryFirstOrDefault(sqlText, dictParams, null, Timeout);
                 }
                 catch (Exception ex)
                 {
@@ -453,7 +454,7 @@ namespace DBHelper.SQLHelper
                 MySqlTransaction trans = conn.BeginTransaction();
                 try
                 {
-                    result = conn.QueryFirstOrDefault(sqlText, dictParams, trans);
+                    result = conn.QueryFirstOrDefault(sqlText, dictParams, trans, Timeout);
                     trans.Commit();
                 }
                 catch (Exception ex)
@@ -480,7 +481,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    return conn.QueryFirstOrDefault<T>(sqlText, dictParams);
+                    return conn.QueryFirstOrDefault<T>(sqlText, dictParams, null, Timeout);
                 }
                 catch (Exception ex)
                 {
@@ -513,7 +514,7 @@ namespace DBHelper.SQLHelper
                 MySqlTransaction trans = conn.BeginTransaction();
                 try
                 {
-                    result = conn.QueryFirstOrDefault<T>(sqlText, dictParams, trans);
+                    result = conn.QueryFirstOrDefault<T>(sqlText, dictParams, trans, Timeout);
                     trans.Commit();
                 }
                 catch (Exception ex)
@@ -543,7 +544,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    var result = conn.QueryMultiple(sqlText, dictParams, null, Timeout);
 
                     var list = result.Read<T>();
                     total = result.ReadFirst<int>();
@@ -580,7 +581,7 @@ namespace DBHelper.SQLHelper
                 MySqlTransaction trans = conn.BeginTransaction();
                 try
                 {
-                    var result = conn.QueryMultiple(sqlText, dictParams, trans);
+                    var result = conn.QueryMultiple(sqlText, dictParams, trans, Timeout);
                     list = result.Read<T>();
                     total = result.ReadFirst<int>();
                     trans.Commit();
@@ -613,7 +614,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    var result = conn.QueryMultiple(sqlText, dictParams, null, Timeout);
                     return func(result.Read<TFirst>(), result.Read<TSecond>());
                 }
                 catch (Exception ex)
@@ -642,7 +643,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    var result = conn.QueryMultiple(sqlText, dictParams, null, Timeout);
                     return func(result.Read<TFirst>(), result.Read<TSecond>(), result.Read<TThird>());
                 }
                 catch (Exception ex)
@@ -672,7 +673,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    var result = conn.QueryMultiple(sqlText, dictParams, null, Timeout);
                     return func(result.Read<TFirst>(), result.Read<TSecond>(), result.Read<TThird>(), result.Read<TFourth>());
                 }
                 catch (Exception ex)
@@ -703,7 +704,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    var result = conn.QueryMultiple(sqlText, dictParams, null, Timeout);
                     return func(result.Read<TFirst>(), result.Read<TSecond>(), result.Read<TThird>(), result.Read<TFourth>(), result.Read<TFifth>());
                 }
                 catch (Exception ex)
@@ -736,7 +737,7 @@ namespace DBHelper.SQLHelper
             }
             catch (Exception ex)
             {
-                throw ex;
+                return false;
             }
             return true;
         }
@@ -757,7 +758,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    var result = conn.QueryMultiple(sqlText, dictParams, null, Timeout);
                     return (result.Read<T>(), result.ReadFirst<int>());
                 }
                 catch (Exception ex)
@@ -782,7 +783,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    var result = conn.QueryMultiple(sqlText, dictParams, null, Timeout);
                     return (result.Read<TFirst>(), result.Read<TSecond>());
                 }
                 catch (Exception ex)
@@ -808,7 +809,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    var result = conn.QueryMultiple(sqlText, dictParams, null, Timeout);
                     return (result.Read<TFirst>(), result.Read<TSecond>(), result.Read<TThird>());
                 }
                 catch (Exception ex)
@@ -835,7 +836,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    var result = conn.QueryMultiple(sqlText, dictParams, null, Timeout);
                     return (result.Read<TFirst>(), result.Read<TSecond>(), result.Read<TThird>(), result.Read<TFourth>());
                 }
                 catch (Exception ex)
@@ -863,7 +864,7 @@ namespace DBHelper.SQLHelper
             {
                 try
                 {
-                    var result = conn.QueryMultiple(sqlText, dictParams);
+                    var result = conn.QueryMultiple(sqlText, dictParams, null, Timeout);
                     return (result.Read<TFirst>(), result.Read<TSecond>(), result.Read<TThird>(), result.Read<TFourth>(), result.Read<TFifth>());
                 }
                 catch (Exception ex)
@@ -873,5 +874,6 @@ namespace DBHelper.SQLHelper
                 }
             }
         }
+
     }
 }
