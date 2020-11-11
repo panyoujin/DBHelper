@@ -66,7 +66,6 @@ namespace DBHelper.SQLAnalytical
         /// <returns></returns>
         public SqlAnalyModel GetSqlAnalyByKey(string key, Dictionary<string, object> keyValue)
         {
-
             var tempKey = key.ToLower();
             //如果缓存的SQL为空，或者在缓存中找不到对应的KEY 就从文件中加载
             if (_sqlDic == null || _sqlDic.Count <= 0 || !_sqlDic.ContainsKey(tempKey))
@@ -75,8 +74,8 @@ namespace DBHelper.SQLAnalytical
             }
             if (!_sqlDic.ContainsKey(tempKey))
             {
-                //return new SqlAnalyModel() { SqlText = key };
-                throw new Exception(string.Format("配置中找不到KEY：{0}", key));
+                return new SqlAnalyModel() { SqlText = key };
+                //throw new Exception(string.Format("配置中找不到KEY：{0}", key));
             }
             Dictionary<string, object> keyValueTemp = ReplaceInjection(keyValue);
             SqlDefinition sqlDefinition = new SqlDefinition(_sqlAnalyModelDic[tempKey]);
@@ -157,9 +156,11 @@ namespace DBHelper.SQLAnalytical
                 }
             }
         }
-
+        //临时存储key对应的父key
+        Dictionary<string, string> KeyParentDic = new Dictionary<string, string>();
         private void GetFileToXml(string path)
         {
+            KeyParentDic = new Dictionary<string, string>();
             var dir = new DirectoryInfo(path);
             var files = dir.GetFiles();
             foreach (var file in files)
@@ -173,6 +174,15 @@ namespace DBHelper.SQLAnalytical
             foreach (var d in childDir)
             {
                 GetFileToXml(d.FullName);
+            }
+            foreach (var dic in KeyParentDic)
+            {
+                if (_sqlAnalyModelDic.ContainsKey(dic.Value))
+                {
+                    var sa = _sqlAnalyModelDic[dic.Key];
+                    sa.ParentAnaly = _sqlAnalyModelDic[dic.Value];
+                    _sqlAnalyModelDic[dic.Key] = sa;
+                }
             }
         }
 
@@ -196,6 +206,10 @@ namespace DBHelper.SQLAnalytical
                             {
                                 _sqlDic[key] = nodeChild["SqlDefinition"];
                                 _sqlAnalyModelDic[key] = SqlAnalyModel.XmlToSqlAnalyModel(nodeChild["SqlDefinition"]);
+                                if (!string.IsNullOrWhiteSpace(_sqlAnalyModelDic[key].ParentKey))
+                                {
+                                    KeyParentDic[key] = _sqlAnalyModelDic[key].ParentKey;
+                                }
                             }
 
                         }
