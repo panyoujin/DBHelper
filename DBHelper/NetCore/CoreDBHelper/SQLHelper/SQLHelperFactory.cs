@@ -71,12 +71,15 @@ namespace DBHelper.SQLHelper
                     sqlHelper = new MySqlHelper();
                     break;
             }
-            if (!ConnectionStringsDic.ContainsKey(model.SqlConnStringName))
+            if (!string.IsNullOrWhiteSpace(model.SqlConnStringName))
             {
-                ConnectionStringsDic[model.SqlConnStringName] = System.Configuration.ConfigurationManager.ConnectionStrings[model.SqlConnStringName].ConnectionString;
-            }
+                if (!ConnectionStringsDic.ContainsKey(model.SqlConnStringName))
+                {
+                    ConnectionStringsDic[model.SqlConnStringName] = System.Configuration.ConfigurationManager.ConnectionStrings[model.SqlConnStringName].ConnectionString;
+                }
 
-            sqlHelper.ConnectionString = ConnectionStringsDic[model.SqlConnStringName];
+                sqlHelper.ConnectionString = ConnectionStringsDic[model.SqlConnStringName];
+            }
             if (string.IsNullOrWhiteSpace(sqlHelper.ConnectionString))
             {
                 if (string.IsNullOrWhiteSpace(DefaultConnectionStrings))
