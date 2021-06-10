@@ -1,6 +1,8 @@
-﻿using DBHelper.SQLHelper;
+﻿using DBHelper.Extend;
+using DBHelper.SQLHelper;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Threading;
 
 namespace CoreDBDemo
@@ -10,12 +12,26 @@ namespace CoreDBDemo
         static bool IsStart = true;
         static void Main(string[] args)
         {
-            Dictionary<string, object> dic = new Dictionary<string, object>();
-            dic["TableName"] = "table1";
-            dic["PrimaryKey"] = "primarykey1";
-            dic["LogType"] = "1,2,3,4";
-            var list = SQLHelperFactory.Instance.QueryForList("GetData", dic);
-            
+            var ids = "18,19".Split(',');
+            List<Dictionary<string, object>> dics = new List<Dictionary<string, object>>();
+            foreach (var id in ids)
+            {
+                dics.Add(new Dictionary<string, object>
+                {
+                    ["cid"] = id,
+                    ["name"] = "a" + id,
+                    ["sort"] = id
+                });
+            }
+            using (var conn = new MySql.Data.MySqlClient.MySqlConnection(SQLHelperFactory.Instance.ConnectionString("Insert2", null)))
+            {
+                conn.Open();
+                DbTransaction trans = conn.BeginTransaction();
+                var i = SQLHelperFactory.Instance.ExecuteNonQuery(conn, null, "Insert2", dics);
+                trans.Commit();
+            }
+            var list = SQLHelperFactory.Instance.QueryForList("GetMenu", null);
+            //var i = SQLHelperFactory.Instance.ExecuteNonQuery("Insert2", dics);
             Console.Read();
         }
         static void Query(object index)

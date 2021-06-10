@@ -1,10 +1,31 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <SqlSetting>
-  <Data name="GetData">
+  <Data name="Insert">
     <SqlDefinition type="MySql" ConnStringName="test_mysql">
       <SqlCommand>
         <![CDATA[
-      SELECT * FROM `sys_log`WHERE Table_Name=@@TableName@@ <%= AND Primary_Key=@@PrimaryKey@@ %><R%= AND Log_Type IN (@@LogType@@)%R>;
+      INSERT INTO `menu` ( `name`, `sort`) VALUES  ( @@name@@, @@sort@@) 
+      ;
+      ]]>
+      </SqlCommand>
+    </SqlDefinition>
+  </Data>
+
+
+  <Data name="Insert2">
+    <SqlDefinition type="MySql" ConnStringName="test_mysql" ParentKey="Insert">
+      <SqlCommand>
+        <![CDATA[
+      INSERT INTO `t` (`cid`)  VALUES (@@cid@@) ;
+      ]]>
+      </SqlCommand>
+    </SqlDefinition>
+  </Data>
+  <Data name="GetMenu">
+    <SqlDefinition type="MySql" ConnStringName="test_mysql">
+      <SqlCommand>
+        <![CDATA[
+      select * from menu ;
       ]]>
       </SqlCommand>
     </SqlDefinition>

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 
@@ -59,18 +60,20 @@ namespace DBHelper.SQLHelper
             {
                 model.DBType = "mysql";
             }
-            switch (model.DBType.ToLower())
-            {
-                case "mysql":
-                    sqlHelper = new MySqlHelper();
-                    break;
-                case "sqlserver":
-                    sqlHelper = new SqlServerHelper();
-                    break;
-                default:
-                    sqlHelper = new MySqlHelper();
-                    break;
-            }
+            sqlHelper = new AllHelper();
+            //switch (model.DBType.ToLower())
+            //{
+            //    case "mysql":
+            //        sqlHelper = new MySqlHelper();
+            //        break;
+            //    case "sqlserver":
+            //        sqlHelper = new SqlServerHelper();
+            //        break;
+            //    default:
+            //        sqlHelper = new AllHelper();
+            //        break;
+            //}
+            sqlHelper.DBType = model.DBType;
             if (!string.IsNullOrWhiteSpace(model.SqlConnStringName))
             {
                 if (!ConnectionStringsDic.ContainsKey(model.SqlConnStringName))
@@ -95,6 +98,74 @@ namespace DBHelper.SQLHelper
             }
             return sqlHelper;
         }
+
+        public string ConnectionString(string sqlKey, Dictionary<string, object> dictParam)
+        {
+            var connectionStr = string.Empty;
+            var model = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, dictParam);
+            if (!string.IsNullOrWhiteSpace(model.SqlConnStringName))
+            {
+                if (!ConnectionStringsDic.ContainsKey(model.SqlConnStringName))
+                {
+                    ConnectionStringsDic[model.SqlConnStringName] = System.Configuration.ConfigurationManager.ConnectionStrings[model.SqlConnStringName].ConnectionString;
+                }
+
+                connectionStr = ConnectionStringsDic[model.SqlConnStringName];
+            }
+            if (string.IsNullOrWhiteSpace(connectionStr))
+            {
+                if (string.IsNullOrWhiteSpace(DefaultConnectionStrings))
+                {
+                    throw new Exception(string.Format("数据库连接配置不正确"));
+                }
+                connectionStr = DefaultConnectionStrings;
+            }
+            return connectionStr;
+        }
+
+        #region 外部控制链接的开启和事务的提交
+        /// <summary>
+        /// 执行单条语句：外部控制链接的开启和事务的提交
+        /// </summary>
+        /// <param name="conn"></param>
+        /// <param name="trans"></param>
+        /// <param name="sqlKey"></param>
+        /// <param name="dictParam"></param>
+        /// <returns></returns>
+        public int ExecuteNonQuery(DbConnection conn, DbTransaction trans, string sqlKey, Dictionary<string, object> dictParam = null)
+        {
+            try
+            {
+                var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, dictParam);
+                return GetSQLHelper(sqlAnaly).ExecuteNonQuery(conn, trans, sqlAnaly.SqlText, CommandType.Text, dictParam);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        /// <summary>
+        /// 批量语句：外部控制链接的开启和事务的提交
+        /// </summary>
+        /// <param name="conn"></param>
+        /// <param name="trans"></param>
+        /// <param name="sqlKey"></param>
+        /// <param name="dictParams"></param>
+        /// <returns></returns>
+        public int ExecuteNonQuery(DbConnection conn, DbTransaction trans, string sqlKey, List<Dictionary<string, object>> dictParams)
+        {
+            try
+            {
+                var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, dictParams);
+                return GetSQLHelper(sqlAnaly).ExecuteNonQuery(conn, trans, sqlAnaly.SqlText, CommandType.Text, dictParams);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        #endregion
+
         /// <summary>
         /// 返回影响行数
         /// </summary>

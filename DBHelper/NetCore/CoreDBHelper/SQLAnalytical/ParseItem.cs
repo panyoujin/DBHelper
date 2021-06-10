@@ -84,7 +84,7 @@ namespace DBHelper.SQLAnalytical
             {
                 string result = keyItem.Value + "";
                 //当使用<%= %> 或者<R%= %R> 同时不传递参数时
-                if (!KeyValue.ContainsKey(keyItem.KeyName) && keyItem.IsNotKeyReturnEmpty)
+                if (KeyValue == null || !KeyValue.ContainsKey(keyItem.KeyName) && keyItem.IsNotKeyReturnEmpty)
                 {
                     return string.Empty;
                 }
