@@ -102,7 +102,8 @@ namespace DBHelper.SQLAnalytical
                 }
                 else
                 {
-                    returnValue = returnValue.Replace(keyItem.Keyword, string.Format("{0}", keyItem.Value));
+                    //原始替换直接拼值，须经过安全策略校验，防止 SQL 注入
+                    returnValue = returnValue.Replace(keyItem.Keyword, SqlSecurityOptions.ResolveRawValue(keyItem.KeyName, keyItem.Value));
                 }
             }
             if (allEmpty) return string.Empty;

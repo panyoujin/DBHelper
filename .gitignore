@@ -1,0 +1,8 @@
+/.vscode
+**/.sonarqube
+**/bin
+**/obj
+**/.vs
+**/packages
+/tatus --porcelain'
+/DBHelper/sonar-scan.ps1

@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 
@@ -16,9 +17,39 @@ namespace DBHelper.SQLHelper
         #region Instance
 
         private static readonly Lazy<SQLHelperFactory> _instance = new Lazy<SQLHelperFactory>(() => new SQLHelperFactory());
+
+        private static readonly SqlHelperOptions _options = new SqlHelperOptions();
+
+        /// <summary>
+        /// 供宿主应用初始化 SQLHelper 的入口。
+        /// 例如在 ASP.NET Core Startup 中调用：
+        /// SQLHelperFactory.Configure(opt =&gt; { opt.DefaultConnectionString = "..."; });
+        /// </summary>
+        public static void Configure(Action<SqlHelperOptions> configure)
+        {
+            if (configure == null) return;
+            configure(_options);
+
+            // 同步部分配置到工厂实例（如已有实例已创建）。
+            if (_instance.IsValueCreated)
+            {
+                _instance.Value.DefaultConnectionStrings = _options.DefaultConnectionString;
+                if (_options.SqlLogWriter != null)
+                {
+                    _instance.Value.SqlLogWriter = _options.SqlLogWriter;
+                    _instance.Value.EnableSqlLog = true;
+                }
+            }
+        }
+
         private SQLHelperFactory()
         {
-
+            DefaultConnectionStrings = _options.DefaultConnectionString;
+            if (_options.SqlLogWriter != null)
+            {
+                SqlLogWriter = _options.SqlLogWriter;
+                EnableSqlLog = true;
+            }
         }
 
         public static SQLHelperFactory Instance
@@ -30,23 +61,82 @@ namespace DBHelper.SQLHelper
         }
 
         #endregion
-        /// <summary>
-        /// 重试的错误信息
-        /// </summary>
-        private List<string> RetryMessage = new List<string>() { "Unable to connect to any of the specified MySQL hosts.", "Too many connections", "error connecting: Timeout expired.  The timeout period elapsed prior to obtaining a connection from the pool.  This may have occurred because all pooled connections were in use and max pool size was reached." };
-        /// <summary>
-        /// 最大重试次数
-        /// </summary>
-        private const int MaxRetry = 3;
+
+        private const int DefaultMaxRetry = 3;
+
+        private static int EffectiveMaxRetry
+        {
+            get
+            {
+                return _options.MaxRetry <= 0 ? DefaultMaxRetry : _options.MaxRetry;
+            }
+        }
+
         /// <summary>
         /// 连接字符串缓存 使用非app.config配置时需要在程序入口处进行初始化
         /// </summary>
         public ConcurrentDictionary<string, string> ConnectionStringsDic = new ConcurrentDictionary<string, string>();
 
         /// <summary>
-        /// 连接字符串缓存 使用非app.config配置时需要在程序入口处进行初始化
+        /// 默认连接字符串，当 XML 未指定连接串名称或找不到配置时使用。
         /// </summary>
         public string DefaultConnectionStrings;
+
+        /// <summary>
+        /// 是否启用 SQL 日志输出。
+        /// </summary>
+        public bool EnableSqlLog { get; set; }
+
+        /// <summary>
+        /// 自定义 SQL 日志委托。
+        /// </summary>
+        public Action<string, string, IDictionary<string, object>> SqlLogWriter { get; set; }
+
+        /// <summary>
+        /// 预览解析后的 SQL 及元数据。
+        /// </summary>
+        public SqlAnalyModel GetSqlAnalyModel(string sqlKey, Dictionary<string, object> paramDic = null)
+        {
+            return CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+        }
+
+        /// <summary>
+        /// 快速获取 SQL 文本。
+        /// </summary>
+        public string PreviewSql(string sqlKey, Dictionary<string, object> paramDic = null)
+        {
+            return GetSqlAnalyModel(sqlKey, paramDic).SqlText;
+        }
+
+        private SqlAnalyModel AnalyzeSql(string sqlKey, Dictionary<string, object> paramDic)
+        {
+            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            LogSqlIfNeeded(sqlKey, sqlAnaly, paramDic);
+            return sqlAnaly;
+        }
+
+        private SqlAnalyModel AnalyzeSql(string sqlKey, List<Dictionary<string, object>> paramDic)
+        {
+            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            LogSqlIfNeeded(sqlKey, sqlAnaly, paramDic?.FirstOrDefault());
+            return sqlAnaly;
+        }
+
+        private void LogSqlIfNeeded(string sqlKey, SqlAnalyModel analy, IDictionary<string, object> paramDic)
+        {
+            if ((!EnableSqlLog && SqlLogWriter == null) || analy == null)
+            {
+                return;
+            }
+            var snapshot = paramDic != null ? paramDic.ToDictionary(k => k.Key, v => v.Value) : new Dictionary<string, object>();
+            var writer = SqlLogWriter ?? DefaultSqlLogWriter;
+            writer(sqlKey, analy.SqlText, snapshot);
+        }
+
+        private void DefaultSqlLogWriter(string sqlKey, string sql, IDictionary<string, object> parameters)
+        {
+            Trace.WriteLine($"[DBHelper] Key:{sqlKey} Sql:{sql}");
+        }
 
         private ISQLHelper GetSQLHelper(SqlAnalyModel model)
         {
@@ -76,20 +166,34 @@ namespace DBHelper.SQLHelper
             sqlHelper.DBType = model.DBType;
             if (!string.IsNullOrWhiteSpace(model.SqlConnStringName))
             {
-                if (!ConnectionStringsDic.ContainsKey(model.SqlConnStringName))
+                // 优先使用外部注入的解析器，其次使用内部缓存与配置文件。
+                if (_options.ConnectionStringResolver != null)
                 {
-                    ConnectionStringsDic[model.SqlConnStringName] = System.Configuration.ConfigurationManager.ConnectionStrings[model.SqlConnStringName].ConnectionString;
+                    sqlHelper.ConnectionString = _options.ConnectionStringResolver(model.SqlConnStringName);
                 }
+                else
+                {
+                    if (!ConnectionStringsDic.ContainsKey(model.SqlConnStringName))
+                    {
+                        var config = System.Configuration.ConfigurationManager.ConnectionStrings[model.SqlConnStringName];
+                        if (config == null || string.IsNullOrWhiteSpace(config.ConnectionString))
+                        {
+                            throw new InvalidOperationException($"未找到名称为 {model.SqlConnStringName} 的连接字符串配置。");
+                        }
+                        ConnectionStringsDic[model.SqlConnStringName] = config.ConnectionString;
+                    }
 
-                sqlHelper.ConnectionString = ConnectionStringsDic[model.SqlConnStringName];
+                    sqlHelper.ConnectionString = ConnectionStringsDic[model.SqlConnStringName];
+                }
             }
             if (string.IsNullOrWhiteSpace(sqlHelper.ConnectionString))
             {
-                if (string.IsNullOrWhiteSpace(DefaultConnectionStrings))
+                var fallback = DefaultConnectionStrings ?? _options.DefaultConnectionString;
+                if (string.IsNullOrWhiteSpace(fallback))
                 {
-                    throw new Exception(string.Format("数据库连接配置不正确"));
+                    throw new InvalidOperationException("数据库连接配置不正确，既未找到命名连接串，也未配置默认连接串。");
                 }
-                sqlHelper.ConnectionString = DefaultConnectionStrings;
+                sqlHelper.ConnectionString = fallback;
             }
 
             if (model.Timeout >= 0)
@@ -102,23 +206,36 @@ namespace DBHelper.SQLHelper
         public string ConnectionString(string sqlKey, Dictionary<string, object> dictParam)
         {
             var connectionStr = string.Empty;
-            var model = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, dictParam);
+            var model = AnalyzeSql(sqlKey, dictParam);
             if (!string.IsNullOrWhiteSpace(model.SqlConnStringName))
             {
-                if (!ConnectionStringsDic.ContainsKey(model.SqlConnStringName))
+                if (_options.ConnectionStringResolver != null)
                 {
-                    ConnectionStringsDic[model.SqlConnStringName] = System.Configuration.ConfigurationManager.ConnectionStrings[model.SqlConnStringName].ConnectionString;
+                    connectionStr = _options.ConnectionStringResolver(model.SqlConnStringName);
                 }
+                else
+                {
+                    if (!ConnectionStringsDic.ContainsKey(model.SqlConnStringName))
+                    {
+                        var config = System.Configuration.ConfigurationManager.ConnectionStrings[model.SqlConnStringName];
+                        if (config == null || string.IsNullOrWhiteSpace(config.ConnectionString))
+                        {
+                            throw new InvalidOperationException($"未找到名称为 {model.SqlConnStringName} 的连接字符串配置。");
+                        }
+                        ConnectionStringsDic[model.SqlConnStringName] = config.ConnectionString;
+                    }
 
-                connectionStr = ConnectionStringsDic[model.SqlConnStringName];
+                    connectionStr = ConnectionStringsDic[model.SqlConnStringName];
+                }
             }
             if (string.IsNullOrWhiteSpace(connectionStr))
             {
-                if (string.IsNullOrWhiteSpace(DefaultConnectionStrings))
+                var fallback = DefaultConnectionStrings ?? _options.DefaultConnectionString;
+                if (string.IsNullOrWhiteSpace(fallback))
                 {
-                    throw new Exception(string.Format("数据库连接配置不正确"));
+                    throw new InvalidOperationException("数据库连接配置不正确，既未找到命名连接串，也未配置默认连接串。");
                 }
-                connectionStr = DefaultConnectionStrings;
+                connectionStr = fallback;
             }
             return connectionStr;
         }
@@ -136,12 +253,12 @@ namespace DBHelper.SQLHelper
         {
             try
             {
-                var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, dictParam);
+                var sqlAnaly = AnalyzeSql(sqlKey, dictParam);
                 return GetSQLHelper(sqlAnaly).ExecuteNonQuery(conn, trans, sqlAnaly.SqlText, CommandType.Text, dictParam);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                throw ex;
+                throw;
             }
         }
         /// <summary>
@@ -156,12 +273,12 @@ namespace DBHelper.SQLHelper
         {
             try
             {
-                var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, dictParams);
+                var sqlAnaly = AnalyzeSql(sqlKey, dictParams);
                 return GetSQLHelper(sqlAnaly).ExecuteNonQuery(conn, trans, sqlAnaly.SqlText, CommandType.Text, dictParams);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                throw ex;
+                throw;
             }
         }
         #endregion
@@ -173,9 +290,9 @@ namespace DBHelper.SQLHelper
         /// <param name="paramDic"></param>
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
-        public int ExecuteNonQuery(string sqlKey, Dictionary<string, object> paramDic = null, bool isUseTrans = false, int maxretry = MaxRetry)
+        public int ExecuteNonQuery(string sqlKey, Dictionary<string, object> paramDic = null, bool isUseTrans = false, int maxretry = DefaultMaxRetry)
         {
-            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            var sqlAnaly = AnalyzeSql(sqlKey, paramDic);
             //return GetSQLHelper(sqlAnaly).ExecuteNonQuery(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
             try
             {
@@ -183,18 +300,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return ExecuteNonQuery(sqlKey, paramDic, isUseTrans, --maxretry);
+                    return ExecuteNonQuery(sqlKey, paramDic, isUseTrans, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
         /// <summary>
@@ -204,9 +319,9 @@ namespace DBHelper.SQLHelper
         /// <param name="paramDic"></param>
         /// <param name="isUseTrans"></param>
         /// <returns>返回影响行数</returns>
-        public int ExecuteNonQuery(string sqlKey, List<Dictionary<string, object>> paramDic, bool isUseTrans = false, int maxretry = MaxRetry)
+        public int ExecuteNonQuery(string sqlKey, List<Dictionary<string, object>> paramDic, bool isUseTrans = false, int maxretry = DefaultMaxRetry)
         {
-            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            var sqlAnaly = AnalyzeSql(sqlKey, paramDic);
             //return GetSQLHelper(sqlAnaly).ExecuteNonQuery(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
             try
             {
@@ -214,18 +329,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic?.FirstOrDefault(), ref maxretry))
                 {
-                    return ExecuteNonQuery(sqlKey, paramDic, isUseTrans, --maxretry);
+                    return ExecuteNonQuery(sqlKey, paramDic, isUseTrans, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic?.FirstOrDefault());
+                throw;
             }
         }
         /// <summary>
@@ -235,9 +348,9 @@ namespace DBHelper.SQLHelper
         /// <param name="paramDic"></param>
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
-        public IDataReader ExecuteReader(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = MaxRetry)
+        public IDataReader ExecuteReader(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = DefaultMaxRetry)
         {
-            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            var sqlAnaly = AnalyzeSql(sqlKey, paramDic);
             //return GetSQLHelper(sqlAnaly).ExecuteReader(sqlAnaly.SqlText, CommandType.Text, paramDic);
             try
             {
@@ -245,18 +358,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return ExecuteReader(sqlKey, paramDic, isUseTrans, --maxretry);
+                    return ExecuteReader(sqlKey, paramDic, isUseTrans, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
         /// <summary>
@@ -266,9 +377,9 @@ namespace DBHelper.SQLHelper
         /// <param name="paramDic"></param>
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
-        public object ExecuteScalar(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = MaxRetry)
+        public object ExecuteScalar(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = DefaultMaxRetry)
         {
-            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            var sqlAnaly = AnalyzeSql(sqlKey, paramDic);
             //return GetSQLHelper(sqlAnaly).ExecuteScalar(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
             try
             {
@@ -276,18 +387,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return ExecuteScalar(sqlKey, paramDic, isUseTrans, --maxretry);
+                    return ExecuteScalar(sqlKey, paramDic, isUseTrans, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
         /// <summary>
@@ -298,9 +407,9 @@ namespace DBHelper.SQLHelper
         /// <param name="paramDic"></param>
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
-        public T ExecuteScalarByT<T>(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = MaxRetry)
+        public T ExecuteScalarByT<T>(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = DefaultMaxRetry)
         {
-            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            var sqlAnaly = AnalyzeSql(sqlKey, paramDic);
             //return GetSQLHelper(sqlAnaly).ExecuteScalar<T>(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
             try
             {
@@ -308,18 +417,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return ExecuteScalarByT<T>(sqlKey, paramDic, isUseTrans, --maxretry);
+                    return ExecuteScalarByT<T>(sqlKey, paramDic, isUseTrans, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
 
@@ -330,9 +437,9 @@ namespace DBHelper.SQLHelper
         /// <param name="paramDic"></param>
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
-        public List<dynamic> QueryForList(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = MaxRetry)
+        public List<dynamic> QueryForList(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = DefaultMaxRetry)
         {
-            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            var sqlAnaly = AnalyzeSql(sqlKey, paramDic);
             try
             {
                 var list = GetSQLHelper(sqlAnaly).QueryForList(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
@@ -345,18 +452,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return QueryForList(sqlKey, paramDic, isUseTrans, --maxretry);
+                    return QueryForList(sqlKey, paramDic, isUseTrans, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
         /// <summary>
@@ -367,9 +472,9 @@ namespace DBHelper.SQLHelper
         /// <param name="paramDic"></param>
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
-        public List<T> QueryForListByT<T>(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = MaxRetry)
+        public List<T> QueryForListByT<T>(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = DefaultMaxRetry)
         {
-            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            var sqlAnaly = AnalyzeSql(sqlKey, paramDic);
             try
             {
                 var list = GetSQLHelper(sqlAnaly).QueryForList<T>(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
@@ -381,18 +486,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return QueryForListByT<T>(sqlKey, paramDic, isUseTrans, --maxretry);
+                    return QueryForListByT<T>(sqlKey, paramDic, isUseTrans, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
         /// <summary>
@@ -402,9 +505,12 @@ namespace DBHelper.SQLHelper
         /// <param name="paramDic"></param>
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
-        public List<object> QueryForLisByAssembly(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = MaxRetry)
+        private static readonly ConcurrentDictionary<string, Type> _typeCache = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<Type, MethodInfo> _queryForListByTCache = new ConcurrentDictionary<Type, MethodInfo>();
+
+        public List<object> QueryForLisByAssembly(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = DefaultMaxRetry)
         {
-            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
+            var sqlAnaly = AnalyzeSql(sqlKey, paramDic);
             if (!string.IsNullOrWhiteSpace(sqlAnaly.ModelClassName))
             {
                 Type t = null;
@@ -412,8 +518,13 @@ namespace DBHelper.SQLHelper
                 {
                     try
                     {
-                        var serviceDll = Assembly.LoadFrom(AppDomain.CurrentDomain.BaseDirectory + "/" + sqlAnaly.Assembly);
-                        t = serviceDll.GetType(sqlAnaly.ModelClassName);//获得类型
+                        var key = sqlAnaly.Assembly + "|" + sqlAnaly.ModelClassName;
+                        t = _typeCache.GetOrAdd(key, _ =>
+                        {
+                            var assemblyPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, sqlAnaly.Assembly);
+                            var serviceDll = Assembly.LoadFrom(assemblyPath);
+                            return serviceDll.GetType(sqlAnaly.ModelClassName);
+                        });
                     }
                     catch
                     {
@@ -422,19 +533,21 @@ namespace DBHelper.SQLHelper
                 }
                 if (t == null)
                 {
-                    t = Assembly.GetExecutingAssembly().GetType(sqlAnaly.ModelClassName);
+                    t = _typeCache.GetOrAdd(sqlAnaly.ModelClassName, name => Assembly.GetExecutingAssembly().GetType(name));
                 }
                 if (t != null)
                 {
-                    MethodInfo MethodToList = this.GetType().GetMethod("QueryForListByT");
-                    if (MethodToList != null)
+                    var genericMethod = _queryForListByTCache.GetOrAdd(t, tp =>
                     {
-                        var to_list = MethodToList.MakeGenericMethod(new Type[] { t }).Invoke(this, new object[] { sqlKey, paramDic, isUseTrans });
-                        if (to_list != null)
-                        {
-                            var list = to_list as IEnumerable<object>;
-                            return list.ToList();
-                        }
+                        var method = GetType().GetMethod("QueryForListByT");
+                        return method.MakeGenericMethod(tp);
+                    });
+
+                    var to_list = genericMethod.Invoke(this, new object[] { sqlKey, paramDic, isUseTrans });
+                    if (to_list != null)
+                    {
+                        var list = to_list as IEnumerable<object>;
+                        return list.ToList();
                     }
                 }
             }
@@ -448,7 +561,7 @@ namespace DBHelper.SQLHelper
         /// <param name="paramDic"></param>
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
-        public dynamic QueryForObject(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = MaxRetry)
+        public dynamic QueryForObject(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = DefaultMaxRetry)
         {
             if (paramDic == null)
             {
@@ -462,18 +575,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return QueryForObject(sqlKey, paramDic, isUseTrans, --maxretry);
+                    return QueryForObject(sqlKey, paramDic, isUseTrans, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
         /// <summary>
@@ -484,7 +595,7 @@ namespace DBHelper.SQLHelper
         /// <param name="paramDic"></param>
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
-        public T QueryForObjectByT<T>(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = MaxRetry)
+        public T QueryForObjectByT<T>(string sqlKey, Dictionary<string, object> paramDic, bool isUseTrans = false, int maxretry = DefaultMaxRetry)
         {
             var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
             try
@@ -494,18 +605,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return QueryForObjectByT<T>(sqlKey, paramDic, isUseTrans, --maxretry);
+                    return QueryForObjectByT<T>(sqlKey, paramDic, isUseTrans, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
         /// <summary>
@@ -517,7 +626,7 @@ namespace DBHelper.SQLHelper
         /// <param name="total"></param>
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
-        public IEnumerable<T> QueryMultipleByPage<T>(string sqlKey, Dictionary<string, object> paramDic, out int total, bool isUseTrans = false, int maxretry = MaxRetry)
+        public IEnumerable<T> QueryMultipleByPage<T>(string sqlKey, Dictionary<string, object> paramDic, out int total, bool isUseTrans = false, int maxretry = DefaultMaxRetry)
         {
             var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
             try
@@ -527,18 +636,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return QueryMultipleByPage<T>(sqlKey, paramDic, out total, isUseTrans, --maxretry);
+                    return QueryMultipleByPage<T>(sqlKey, paramDic, out total, isUseTrans, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
 
@@ -551,7 +658,7 @@ namespace DBHelper.SQLHelper
         /// <param name="total"></param>
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
-        public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TReturn>(string sqlKey, Dictionary<string, object> paramDic, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TReturn>> func, bool isUseTrans = false, int maxretry = MaxRetry)
+        public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TReturn>(string sqlKey, Dictionary<string, object> paramDic, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TReturn>> func, bool isUseTrans = false, int maxretry = DefaultMaxRetry)
         {
             var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
             try
@@ -561,18 +668,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return QueryMultiple(sqlKey, paramDic, func, isUseTrans, --maxretry);
+                    return QueryMultiple(sqlKey, paramDic, func, isUseTrans, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
 
@@ -586,7 +691,7 @@ namespace DBHelper.SQLHelper
         /// <param name="total"></param>
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
-        public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TReturn>(string sqlKey, Dictionary<string, object> paramDic, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TReturn>> func, bool isUseTrans = false, int maxretry = MaxRetry)
+        public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TReturn>(string sqlKey, Dictionary<string, object> paramDic, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TReturn>> func, bool isUseTrans = false, int maxretry = DefaultMaxRetry)
         {
             var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
             try
@@ -596,18 +701,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return QueryMultiple(sqlKey, paramDic, func, isUseTrans, --maxretry);
+                    return QueryMultiple(sqlKey, paramDic, func, isUseTrans, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
 
@@ -621,7 +724,7 @@ namespace DBHelper.SQLHelper
         /// <param name="total"></param>
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
-        public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TFourth, TReturn>(string sqlKey, Dictionary<string, object> paramDic, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TReturn>> func, bool isUseTrans = false, int maxretry = MaxRetry)
+        public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TFourth, TReturn>(string sqlKey, Dictionary<string, object> paramDic, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TReturn>> func, bool isUseTrans = false, int maxretry = DefaultMaxRetry)
         {
             var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
             try
@@ -631,18 +734,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return QueryMultiple(sqlKey, paramDic, func, isUseTrans, --maxretry);
+                    return QueryMultiple(sqlKey, paramDic, func, isUseTrans, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
 
@@ -655,7 +756,7 @@ namespace DBHelper.SQLHelper
         /// <param name="total"></param>
         /// <param name="isUseTrans"></param>
         /// <returns></returns>
-        public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth, TReturn>(string sqlKey, Dictionary<string, object> paramDic, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TFifth>, IEnumerable<TReturn>> func, bool isUseTrans = false, int maxretry = MaxRetry)
+        public IEnumerable<TReturn> QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth, TReturn>(string sqlKey, Dictionary<string, object> paramDic, Func<IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TFifth>, IEnumerable<TReturn>> func, bool isUseTrans = false, int maxretry = DefaultMaxRetry)
         {
             var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
             try
@@ -665,18 +766,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return QueryMultiple(sqlKey, paramDic, func, isUseTrans, --maxretry);
+                    return QueryMultiple(sqlKey, paramDic, func, isUseTrans, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
         #region Test
@@ -709,17 +808,34 @@ namespace DBHelper.SQLHelper
                     sqlHelper = new MySqlHelper();
                     break;
             }
-            if (!string.IsNullOrWhiteSpace(connStringName) && !ConnectionStringsDic.ContainsKey(connStringName))
+            if (!string.IsNullOrWhiteSpace(connStringName))
             {
-                ConnectionStringsDic[connStringName] = System.Configuration.ConfigurationManager.ConnectionStrings[connStringName].ConnectionString;
-            }
-            if (string.IsNullOrWhiteSpace(connStringName))
-            {
-                sqlHelper.ConnectionString = DefaultConnectionStrings;
+                if (_options.ConnectionStringResolver != null)
+                {
+                    sqlHelper.ConnectionString = _options.ConnectionStringResolver(connStringName);
+                }
+                else
+                {
+                    if (!ConnectionStringsDic.ContainsKey(connStringName))
+                    {
+                        var config = System.Configuration.ConfigurationManager.ConnectionStrings[connStringName];
+                        if (config == null || string.IsNullOrWhiteSpace(config.ConnectionString))
+                        {
+                            throw new InvalidOperationException($"未找到名称为 {connStringName} 的连接字符串配置。");
+                        }
+                        ConnectionStringsDic[connStringName] = config.ConnectionString;
+                    }
+                    sqlHelper.ConnectionString = ConnectionStringsDic[connStringName];
+                }
             }
             else
             {
-                sqlHelper.ConnectionString = ConnectionStringsDic[connStringName];
+                var fallback = DefaultConnectionStrings ?? _options.DefaultConnectionString;
+                if (string.IsNullOrWhiteSpace(fallback))
+                {
+                    throw new InvalidOperationException("数据库连接配置不正确，既未找到命名连接串，也未配置默认连接串。");
+                }
+                sqlHelper.ConnectionString = fallback;
             }
             return sqlHelper.TestConnection();
         }
@@ -735,7 +851,7 @@ namespace DBHelper.SQLHelper
         /// <param name="paramDic"></param>
         /// <param name="maxretry"></param>
         /// <returns></returns>
-        public (IEnumerable<T>, int) QueryMultipleByPage<T>(string sqlKey, Dictionary<string, object> paramDic, int maxretry = MaxRetry)
+        public (IEnumerable<T>, int) QueryMultipleByPage<T>(string sqlKey, Dictionary<string, object> paramDic, int maxretry = DefaultMaxRetry)
         {
             var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
             try
@@ -745,18 +861,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return QueryMultipleByPage<T>(sqlKey, paramDic, --maxretry);
+                    return QueryMultipleByPage<T>(sqlKey, paramDic, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
         /// <summary>
@@ -768,7 +882,7 @@ namespace DBHelper.SQLHelper
         /// <param name="paramDic"></param>
         /// <param name="maxretry"></param>
         /// <returns></returns>
-        public (IEnumerable<TFirst>, IEnumerable<TSecond>) QueryMultiple<TFirst, TSecond>(string sqlKey, Dictionary<string, object> paramDic, int maxretry = MaxRetry)
+        public (IEnumerable<TFirst>, IEnumerable<TSecond>) QueryMultiple<TFirst, TSecond>(string sqlKey, Dictionary<string, object> paramDic, int maxretry = DefaultMaxRetry)
         {
             var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
             try
@@ -778,18 +892,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return QueryMultiple<TFirst, TSecond>(sqlKey, paramDic, --maxretry);
+                    return QueryMultiple<TFirst, TSecond>(sqlKey, paramDic, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
         /// <summary>
@@ -802,7 +914,7 @@ namespace DBHelper.SQLHelper
         /// <param name="paramDic"></param>
         /// <param name="maxretry"></param>
         /// <returns></returns>
-        public (IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>) QueryMultiple<TFirst, TSecond, TThird>(string sqlKey, Dictionary<string, object> paramDic, int maxretry = MaxRetry)
+        public (IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>) QueryMultiple<TFirst, TSecond, TThird>(string sqlKey, Dictionary<string, object> paramDic, int maxretry = DefaultMaxRetry)
         {
             var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
             try
@@ -812,18 +924,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return QueryMultiple<TFirst, TSecond, TThird>(sqlKey, paramDic, --maxretry);
+                    return QueryMultiple<TFirst, TSecond, TThird>(sqlKey, paramDic, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
         /// <summary>
@@ -837,7 +947,7 @@ namespace DBHelper.SQLHelper
         /// <param name="paramDic"></param>
         /// <param name="maxretry"></param>
         /// <returns></returns>
-        public (IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>) QueryMultiple<TFirst, TSecond, TThird, TFourth>(string sqlKey, Dictionary<string, object> paramDic, int maxretry = MaxRetry)
+        public (IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>) QueryMultiple<TFirst, TSecond, TThird, TFourth>(string sqlKey, Dictionary<string, object> paramDic, int maxretry = DefaultMaxRetry)
         {
             var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
             try
@@ -847,18 +957,16 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return QueryMultiple<TFirst, TSecond, TThird, TFourth>(sqlKey, paramDic, --maxretry);
+                    return QueryMultiple<TFirst, TSecond, TThird, TFourth>(sqlKey, paramDic, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
             }
         }
         /// <summary>
@@ -873,7 +981,7 @@ namespace DBHelper.SQLHelper
         /// <param name="paramDic"></param>
         /// <param name="maxretry"></param>
         /// <returns></returns>
-        public (IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TFifth>) QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth>(string sqlKey, Dictionary<string, object> paramDic, int maxretry = MaxRetry)
+        public (IEnumerable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IEnumerable<TFourth>, IEnumerable<TFifth>) QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth>(string sqlKey, Dictionary<string, object> paramDic, int maxretry = DefaultMaxRetry)
         {
             var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, paramDic);
             try
@@ -883,18 +991,61 @@ namespace DBHelper.SQLHelper
             }
             catch (MySql.Data.MySqlClient.MySqlException ex)
             {
-                if (maxretry > 0 && RetryMessage.Contains(ex.Message))
+                if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
-                    return QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth>(sqlKey, paramDic, --maxretry);
+                    return QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth>(sqlKey, paramDic, maxretry);
                 }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                OnError(ex, sqlKey, paramDic);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 内部处理可重试异常的统一入口。
+        /// </summary>
+        private static bool HandleTransientException(Exception ex, string sqlKey, IDictionary<string, object> param, ref int maxretry)
+        {
+            OnError(ex, sqlKey, param);
+
+            var max = EffectiveMaxRetry;
+            if (maxretry <= 0)
+            {
+                maxretry = max;
+            }
+
+            bool isTransient = false;
+            if (_options.TransientErrorDetector != null)
+            {
+                isTransient = _options.TransientErrorDetector(ex);
+            }
+
+            if (!isTransient)
+            {
+                return false;
+            }
+
+            if (maxretry <= 0)
+            {
+                return false;
+            }
+
+            maxretry--;
+            return maxretry >= 0;
+        }
+
+        private static void OnError(Exception ex, string sqlKey, IDictionary<string, object> param)
+        {
+            try
+            {
+                _options.OnError?.Invoke(ex, sqlKey, param ?? new Dictionary<string, object>());
+            }
+            catch
+            {
+                // 日志回调不影响主流程
             }
         }
     }

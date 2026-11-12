@@ -50,7 +50,7 @@ namespace DBHelper.Models
         /// <summary>
         /// 超时设置
         /// </summary>
-        public int Timeout { get; set; } = -1;
+        public int Timeout { get; set; } = 30;
 
 
         public static SqlAnalyModel XmlToSqlAnalyModel(XmlNode node)

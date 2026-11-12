@@ -118,12 +118,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
         /// <summary>
@@ -149,12 +149,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
         /// <summary>
@@ -180,12 +180,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
         /// <summary>
@@ -211,12 +211,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
         /// <summary>
@@ -243,12 +243,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
 
@@ -280,12 +280,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
         /// <summary>
@@ -316,12 +316,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
         /// <summary>
@@ -393,12 +393,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
         /// <summary>
@@ -425,12 +425,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
         /// <summary>
@@ -458,12 +458,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
 
@@ -492,12 +492,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
 
@@ -527,12 +527,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
 
@@ -562,12 +562,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
 
@@ -596,12 +596,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
         #region Test
@@ -676,12 +676,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
         /// <summary>
@@ -709,12 +709,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
         /// <summary>
@@ -743,12 +743,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
         /// <summary>
@@ -778,12 +778,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
         /// <summary>
@@ -814,12 +814,12 @@ namespace DBHelper.SQLHelper
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
     }

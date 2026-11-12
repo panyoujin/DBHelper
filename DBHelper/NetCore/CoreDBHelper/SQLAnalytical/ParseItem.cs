@@ -110,7 +110,8 @@ namespace DBHelper.SQLAnalytical
                 }
                 else
                 {
-                    returnValue = returnValue.Replace(keyItem.Keyword, string.Format("{0}", keyItem.Value));
+                    var rawValue = SqlSecurityOptions.ResolveRawValue(keyItem.KeyName, keyItem.Value);
+                    returnValue = returnValue.Replace(keyItem.Keyword, rawValue);
                 }
             }
 

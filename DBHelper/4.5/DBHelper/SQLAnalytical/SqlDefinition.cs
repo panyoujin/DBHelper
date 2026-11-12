@@ -103,7 +103,7 @@ namespace DBHelper.SQLAnalytical
         /// <summary>
         /// 超时设置
         /// </summary>
-        public int Timeout { get; set; } = -1;
+        public int Timeout { get; set; } = 30;
 
 
         public SqlAnalyModel SqlAnaly(Dictionary<string, object> keyValue)

@@ -65,11 +65,10 @@
     <Compile Include="SQLAnalytical\KeywordVariable.cs" />
     <Compile Include="SQLAnalytical\ParseItem.cs" />
     <Compile Include="SQLAnalytical\SqlDefinition.cs" />
+    <Compile Include="SQLAnalytical\SqlSecurityOptions.cs" />
     <Compile Include="SQLHelper\MySqlHelper.cs" />
     <Compile Include="SQLHelper\SQLHelperFactory.cs" />
     <Compile Include="SQLHelper\SqlServerHelper.cs" />
-    <Compile Include="Utilities\FileInfoConfigRefresher.cs" />
-    <Compile Include="Utilities\IConfigRefresher.cs" />
     <Compile Include="Utilities\XmlUtility.cs" />
   </ItemGroup>
   <ItemGroup>

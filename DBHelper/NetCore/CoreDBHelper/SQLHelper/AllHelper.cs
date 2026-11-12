@@ -62,8 +62,7 @@ namespace DBHelper.SQLHelper
             }
             catch (Exception ex)
             {
-                ex.Source = ex.Source + sqlText;
-                throw ex;
+                throw;
             }
         }
         /// <summary>
@@ -83,8 +82,7 @@ namespace DBHelper.SQLHelper
             }
             catch (Exception ex)
             {
-                ex.Source = ex.Source + sqlText;
-                throw ex;
+                throw;
             }
         }
         #endregion
@@ -108,8 +106,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -141,8 +138,7 @@ namespace DBHelper.SQLHelper
                 catch (Exception ex)
                 {
                     trans.Rollback();
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
             return result;
@@ -167,8 +163,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -200,8 +195,7 @@ namespace DBHelper.SQLHelper
                 catch (Exception ex)
                 {
                     trans.Rollback();
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
             return result;
@@ -228,8 +222,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -251,8 +244,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -285,8 +277,7 @@ namespace DBHelper.SQLHelper
                 catch (Exception ex)
                 {
                     trans.Rollback();
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
             return result;
@@ -319,8 +310,7 @@ namespace DBHelper.SQLHelper
                 catch (Exception ex)
                 {
                     trans.Rollback();
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
             return t;
@@ -347,8 +337,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -374,8 +363,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -406,8 +394,7 @@ namespace DBHelper.SQLHelper
                 catch (Exception ex)
                 {
                     trans.Rollback();
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
             return result;
@@ -431,8 +418,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -465,8 +451,7 @@ namespace DBHelper.SQLHelper
                 catch (Exception ex)
                 {
                     trans.Rollback();
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
             return result;
@@ -489,8 +474,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -522,8 +506,7 @@ namespace DBHelper.SQLHelper
                 catch (Exception ex)
                 {
                     trans.Rollback();
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
             return result;
@@ -547,8 +530,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -582,8 +564,7 @@ namespace DBHelper.SQLHelper
                 catch (Exception ex)
                 {
                     trans.Rollback();
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
             return result;
@@ -614,8 +595,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -651,8 +631,7 @@ namespace DBHelper.SQLHelper
                 catch (Exception ex)
                 {
                     trans.Rollback();
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
             return list;
@@ -681,8 +660,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -710,8 +688,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -740,8 +717,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -771,8 +747,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -799,7 +774,7 @@ namespace DBHelper.SQLHelper
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
             return true;
         }
@@ -825,8 +800,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -850,8 +824,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -876,8 +849,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -903,8 +875,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
@@ -931,8 +902,7 @@ namespace DBHelper.SQLHelper
                 }
                 catch (Exception ex)
                 {
-                    ex.Source = ex.Source + sqlText;
-                    throw ex;
+                    throw;
                 }
             }
         }
