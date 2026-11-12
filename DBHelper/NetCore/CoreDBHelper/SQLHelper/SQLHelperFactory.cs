@@ -295,7 +295,7 @@ namespace DBHelper.SQLHelper
             switch ((dbType ?? "mysql").ToLower())
             {
                 case "sqlserver":
-                    return new System.Data.SqlClient.SqlConnection(connectionString);
+                    return new Microsoft.Data.SqlClient.SqlConnection(connectionString);
                 case "postgresql":
                 case "postgres":
                 case "pgsql":

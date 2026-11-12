@@ -90,6 +90,10 @@ namespace DBHelper.SQLAnalytical
                     switch (type.ToLower())
                     {
                         case "sqlserver":
+                        case "postgresql":
+                        case "postgres":
+                        case "pgsql":
+                            //SQL Server 与 PostgreSQL（Npgsql Named 参数）均使用 @ 前缀
                             returnValue = returnValue.Replace(keyItem.Keyword, string.Format("@{0}", keyItem.KeyName));
                             break;
                         case "mysql":
