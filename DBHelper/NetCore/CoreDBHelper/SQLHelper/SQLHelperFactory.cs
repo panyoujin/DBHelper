@@ -283,6 +283,79 @@ namespace DBHelper.SQLHelper
         }
         #endregion
 
+        #region 事务封装：内部管理连接的开启与事务的提交/回滚
+        /// <summary>
+        /// 按数据库类型创建连接
+        /// </summary>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dbType">数据库类型：mysql（默认）/sqlserver</param>
+        /// <returns></returns>
+        private DbConnection CreateTransactionConnection(string connectionString, string dbType)
+        {
+            switch ((dbType ?? "mysql").ToLower())
+            {
+                case "sqlserver":
+                    return new System.Data.SqlClient.SqlConnection(connectionString);
+                default:
+                    return new MySqlConnector.MySqlConnection(connectionString);
+            }
+        }
+        /// <summary>
+        /// 事务执行：内部创建连接并管理提交/回滚，业务代码在 action 中定义。
+        /// action 正常返回则提交；抛出异常则回滚并原样抛出。
+        /// </summary>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dbType">数据库类型：mysql（默认）/sqlserver</param>
+        /// <param name="action">业务代码：通过 ExecuteNonQuery(conn, trans, sqlKey, ...) 在同一事务中执行多个 SQL key</param>
+        public void ExecuteInTransaction(string connectionString, string dbType, Action<DbConnection, DbTransaction> action)
+        {
+            ExecuteInTransaction<object>(connectionString, dbType, (conn, trans) =>
+            {
+                action(conn, trans);
+                return null;
+            });
+        }
+        /// <summary>
+        /// 事务执行并返回结果：内部创建连接并管理提交/回滚，业务代码在 func 中定义。
+        /// func 正常返回则提交并返回结果；抛出异常则回滚并原样抛出。
+        /// </summary>
+        /// <typeparam name="T">返回值类型</typeparam>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dbType">数据库类型：mysql（默认）/sqlserver</param>
+        /// <param name="func">业务代码：通过 ExecuteNonQuery(conn, trans, sqlKey, ...) 在同一事务中执行多个 SQL key</param>
+        /// <returns>func 的返回值</returns>
+        public T ExecuteInTransaction<T>(string connectionString, string dbType, Func<DbConnection, DbTransaction, T> func)
+        {
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentException("连接字符串不能为空", nameof(connectionString));
+            }
+            if (func == null)
+            {
+                throw new ArgumentNullException(nameof(func));
+            }
+            using (DbConnection conn = CreateTransactionConnection(connectionString, dbType))
+            {
+                conn.Open();
+                using (DbTransaction trans = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        T result = func(conn, trans);
+                        trans.Commit();
+                        return result;
+                    }
+                    catch (Exception)
+                    {
+                        //回滚失败（如连接已断开）时吞掉回滚自身的异常，保留原始业务异常
+                        try { trans.Rollback(); } catch (Exception) { }
+                        throw;
+                    }
+                }
+            }
+        }
+        #endregion
+
         /// <summary>
         /// 返回影响行数
         /// </summary>
@@ -298,7 +371,7 @@ namespace DBHelper.SQLHelper
             {
                 return GetSQLHelper(sqlAnaly).ExecuteNonQuery(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -327,7 +400,7 @@ namespace DBHelper.SQLHelper
             {
                 return GetSQLHelper(sqlAnaly).ExecuteNonQuery(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic?.FirstOrDefault(), ref maxretry))
                 {
@@ -356,7 +429,7 @@ namespace DBHelper.SQLHelper
             {
                 return GetSQLHelper(sqlAnaly).ExecuteReader(sqlAnaly.SqlText, CommandType.Text, paramDic);
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -385,7 +458,7 @@ namespace DBHelper.SQLHelper
             {
                 return GetSQLHelper(sqlAnaly).ExecuteScalar(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -415,7 +488,7 @@ namespace DBHelper.SQLHelper
             {
                 return GetSQLHelper(sqlAnaly).ExecuteScalar<T>(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -450,7 +523,7 @@ namespace DBHelper.SQLHelper
                 }
                 return list.ToList();
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -484,7 +557,7 @@ namespace DBHelper.SQLHelper
                 }
                 return list.ToList();
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -573,7 +646,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryForObject(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -603,7 +676,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryForObject<T>(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -634,7 +707,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultipleByPage<T>(sqlAnaly.SqlText, CommandType.Text, paramDic, out total, isUseTrans);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -666,7 +739,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultiple(sqlAnaly.SqlText, CommandType.Text, paramDic, func, isUseTrans);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -699,7 +772,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultiple(sqlAnaly.SqlText, CommandType.Text, paramDic, func, isUseTrans);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -732,7 +805,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultiple(sqlAnaly.SqlText, CommandType.Text, paramDic, func, isUseTrans);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -764,7 +837,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultiple(sqlAnaly.SqlText, CommandType.Text, paramDic, func, isUseTrans);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -859,7 +932,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultipleByPage<T>(sqlAnaly.SqlText, CommandType.Text, paramDic);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -890,7 +963,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultiple<TFirst, TSecond>(sqlAnaly.SqlText, CommandType.Text, paramDic);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -922,7 +995,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultiple<TFirst, TSecond, TThird>(sqlAnaly.SqlText, CommandType.Text, paramDic);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -955,7 +1028,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultiple<TFirst, TSecond, TThird, TFourth>(sqlAnaly.SqlText, CommandType.Text, paramDic);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {
@@ -989,7 +1062,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth>(sqlAnaly.SqlText, CommandType.Text, paramDic);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (HandleTransientException(ex, sqlKey, paramDic, ref maxretry))
                 {

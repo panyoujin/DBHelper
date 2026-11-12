@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 
@@ -95,6 +96,108 @@ namespace DBHelper.SQLHelper
             }
             return sqlHelper;
         }
+        #region 外部控制链接的开启和事务的提交
+        /// <summary>
+        /// 执行单条语句：外部控制链接的开启和事务的提交
+        /// </summary>
+        /// <param name="conn">数据库连接：必须在外部进行开启</param>
+        /// <param name="trans">外部事务</param>
+        /// <param name="sqlKey">SQL配置的KEY</param>
+        /// <param name="dictParam">参数（可为空）</param>
+        /// <returns></returns>
+        public int ExecuteNonQuery(DbConnection conn, DbTransaction trans, string sqlKey, Dictionary<string, object> dictParam = null)
+        {
+            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, dictParam);
+            return GetSQLHelper(sqlAnaly).ExecuteNonQuery(conn, trans, sqlAnaly.SqlText, CommandType.Text, dictParam);
+        }
+        /// <summary>
+        /// 批量语句：外部控制链接的开启和事务的提交
+        /// </summary>
+        /// <param name="conn">数据库连接：必须在外部进行开启</param>
+        /// <param name="trans">外部事务</param>
+        /// <param name="sqlKey">SQL配置的KEY</param>
+        /// <param name="dictParams">参数列表，每组参数执行一次</param>
+        /// <returns></returns>
+        public int ExecuteNonQuery(DbConnection conn, DbTransaction trans, string sqlKey, List<Dictionary<string, object>> dictParams)
+        {
+            var sqlAnaly = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, dictParams);
+            return GetSQLHelper(sqlAnaly).ExecuteNonQuery(conn, trans, sqlAnaly.SqlText, CommandType.Text, dictParams);
+        }
+        #endregion
+
+        #region 事务封装：内部管理连接的开启与事务的提交/回滚
+        /// <summary>
+        /// 按数据库类型创建连接
+        /// </summary>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dbType">数据库类型：mysql（默认）/sqlserver</param>
+        /// <returns></returns>
+        private DbConnection CreateTransactionConnection(string connectionString, string dbType)
+        {
+            switch ((dbType ?? "mysql").ToLower())
+            {
+                case "sqlserver":
+                    return new System.Data.SqlClient.SqlConnection(connectionString);
+                default:
+                    return new MySql.Data.MySqlClient.MySqlConnection(connectionString);
+            }
+        }
+        /// <summary>
+        /// 事务执行：内部创建连接并管理提交/回滚，业务代码在 action 中定义。
+        /// action 正常返回则提交；抛出异常则回滚并原样抛出。
+        /// </summary>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dbType">数据库类型：mysql（默认）/sqlserver</param>
+        /// <param name="action">业务代码：通过 ExecuteNonQuery(conn, trans, sqlKey, ...) 在同一事务中执行多个 SQL key</param>
+        public void ExecuteInTransaction(string connectionString, string dbType, Action<DbConnection, DbTransaction> action)
+        {
+            ExecuteInTransaction<object>(connectionString, dbType, delegate(DbConnection conn, DbTransaction trans)
+            {
+                action(conn, trans);
+                return null;
+            });
+        }
+        /// <summary>
+        /// 事务执行并返回结果：内部创建连接并管理提交/回滚，业务代码在 func 中定义。
+        /// func 正常返回则提交并返回结果；抛出异常则回滚并原样抛出。
+        /// </summary>
+        /// <typeparam name="T">返回值类型</typeparam>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dbType">数据库类型：mysql（默认）/sqlserver</param>
+        /// <param name="func">业务代码：通过 ExecuteNonQuery(conn, trans, sqlKey, ...) 在同一事务中执行多个 SQL key</param>
+        /// <returns>func 的返回值</returns>
+        public T ExecuteInTransaction<T>(string connectionString, string dbType, Func<DbConnection, DbTransaction, T> func)
+        {
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentException("连接字符串不能为空", "connectionString");
+            }
+            if (func == null)
+            {
+                throw new ArgumentNullException("func");
+            }
+            using (DbConnection conn = CreateTransactionConnection(connectionString, dbType))
+            {
+                conn.Open();
+                using (DbTransaction trans = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        T result = func(conn, trans);
+                        trans.Commit();
+                        return result;
+                    }
+                    catch (Exception)
+                    {
+                        //回滚失败（如连接已断开）时吞掉回滚自身的异常，保留原始业务异常
+                        try { trans.Rollback(); } catch (Exception) { }
+                        throw;
+                    }
+                }
+            }
+        }
+        #endregion
+
         /// <summary>
         /// 返回影响行数
         /// </summary>

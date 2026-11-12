@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 
 namespace DBHelper.Interface
 {
@@ -16,6 +17,28 @@ namespace DBHelper.Interface
         /// <param name="dictParams">参数</param>
         /// <returns></returns>
         //int ExecuteNonQuery(string sqlText, CommandType cmdType, IDictionary<string, object> dictParams);
+
+        /// <summary>
+        /// 执行单条语句：外部控制链接的开启和事务的提交
+        /// </summary>
+        /// <param name="conn">数据库连接：必须在外部进行开启</param>
+        /// <param name="trans">外部事务</param>
+        /// <param name="sqlText">数据库命令：存储过程名或sql语句</param>
+        /// <param name="cmdType">命令类型</param>
+        /// <param name="dictParams">sql命令的参数数组（可为空）</param>
+        /// <returns></returns>
+        int ExecuteNonQuery(DbConnection conn, DbTransaction trans, string sqlText, CommandType cmdType, IDictionary<string, object> dictParams);
+
+        /// <summary>
+        /// 批量语句：外部控制链接的开启和事务的提交
+        /// </summary>
+        /// <param name="conn">数据库连接：必须在外部进行开启</param>
+        /// <param name="trans">外部事务</param>
+        /// <param name="sqlText">数据库命令：存储过程名或sql语句</param>
+        /// <param name="cmdType">命令类型</param>
+        /// <param name="dictParams">sql命令的参数数组（可为空）</param>
+        /// <returns></returns>
+        int ExecuteNonQuery(DbConnection conn, DbTransaction trans, string sqlText, CommandType cmdType, IEnumerable<IDictionary<string, object>> dictParams);
 
         /// <summary>
         /// 执行sql命令，返回影响行数

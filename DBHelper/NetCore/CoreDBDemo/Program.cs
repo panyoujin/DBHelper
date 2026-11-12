@@ -23,11 +23,11 @@ namespace CoreDBDemo
                     ["sort"] = id
                 });
             }
-            using (var conn = new MySql.Data.MySqlClient.MySqlConnection(SQLHelperFactory.Instance.ConnectionString("Insert2", null)))
+            using (var conn = new MySqlConnector.MySqlConnection(SQLHelperFactory.Instance.ConnectionString("Insert2", null)))
             {
                 conn.Open();
                 DbTransaction trans = conn.BeginTransaction();
-                var i = SQLHelperFactory.Instance.ExecuteNonQuery(conn, null, "Insert2", dics);
+                var i = SQLHelperFactory.Instance.ExecuteNonQuery(conn, trans, "Insert2", dics);
                 trans.Commit();
             }
             var list = SQLHelperFactory.Instance.QueryForList("GetMenu", null);
