@@ -296,6 +296,10 @@ namespace DBHelper.SQLHelper
             {
                 case "sqlserver":
                     return new System.Data.SqlClient.SqlConnection(connectionString);
+                case "postgresql":
+                case "postgres":
+                case "pgsql":
+                    return new Npgsql.NpgsqlConnection(connectionString);
                 default:
                     return new MySqlConnector.MySqlConnection(connectionString);
             }
@@ -876,6 +880,13 @@ namespace DBHelper.SQLHelper
                     break;
                 case "sqlserver":
                     sqlHelper = new SqlServerHelper();
+                    break;
+                case "postgresql":
+                case "postgres":
+                case "pgsql":
+                    //主分发路径 GetSQLHelper 统一走 AllHelper，按 DBType 创建对应连接
+                    sqlHelper = new AllHelper();
+                    sqlHelper.DBType = "postgresql";
                     break;
                 default:
                     sqlHelper = new MySqlHelper();

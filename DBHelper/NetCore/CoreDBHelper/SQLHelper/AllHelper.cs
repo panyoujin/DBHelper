@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using DBHelper.Interface;
 using MySqlConnector;
+using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -31,12 +32,16 @@ namespace DBHelper.SQLHelper
 
         private DbConnection CreaterConnection()
         {
-            switch (DBType)
+            switch (DBType.ToLower())
             {
                 case "mysql":
                     return new MySqlConnection(ConnectionString);
                 case "sqlserver":
                     return new SqlConnection(ConnectionString);
+                case "postgresql":
+                case "postgres":
+                case "pgsql":
+                    return new NpgsqlConnection(ConnectionString);
                 default:
                     return new MySqlConnection(ConnectionString);
             }
