@@ -104,7 +104,9 @@ namespace DBHelper.SQLAnalytical
                             //SQL Server 与 PostgreSQL（Npgsql Named 参数）均使用 @ 前缀
                             returnValue = returnValue.Replace(keyItem.Keyword, string.Format("@{0}", keyItem.KeyName));
                             break;
+                        case "mariadb":
                         case "mysql":
+                            //MariaDB 兼容 MySQL 协议与方言，MySqlConnector 同时支持两者
                             returnValue = returnValue.Replace(keyItem.Keyword, string.Format("?{0}", keyItem.KeyName));
                             break;
                         default:
