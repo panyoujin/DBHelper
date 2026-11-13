@@ -48,6 +48,39 @@ namespace DBHelper.SQLHelper
         /// </summary>
         public string DefaultConnectionStrings;
 
+        /// <summary>
+        /// 获取指定 SQL KEY 所配置的数据库连接字符串（用于外部创建连接、开启事务）
+        /// </summary>
+        /// <param name="sqlKey">SQL 配置的 KEY</param>
+        /// <param name="dictParam">参数字典（含 ConnectionPrefix 分库前缀等特殊 key 时需传入）</param>
+        public string ConnectionString(string sqlKey, Dictionary<string, object> dictParam = null)
+        {
+            var model = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, dictParam ?? new Dictionary<string, object>());
+            var connectionStr = string.Empty;
+            if (!string.IsNullOrWhiteSpace(model.SqlConnStringName))
+            {
+                if (!ConnectionStringsDic.ContainsKey(model.SqlConnStringName))
+                {
+                    var config = System.Configuration.ConfigurationManager.ConnectionStrings[model.SqlConnStringName];
+                    if (config == null || string.IsNullOrWhiteSpace(config.ConnectionString))
+                    {
+                        throw new InvalidOperationException(string.Format("未找到名称为 {0} 的连接字符串配置。", model.SqlConnStringName));
+                    }
+                    ConnectionStringsDic[model.SqlConnStringName] = config.ConnectionString;
+                }
+                connectionStr = ConnectionStringsDic[model.SqlConnStringName];
+            }
+            if (string.IsNullOrWhiteSpace(connectionStr))
+            {
+                if (string.IsNullOrWhiteSpace(DefaultConnectionStrings))
+                {
+                    throw new InvalidOperationException("数据库连接配置不正确，既未找到命名连接串，也未配置默认连接串。");
+                }
+                connectionStr = DefaultConnectionStrings;
+            }
+            return connectionStr;
+        }
+
         private ISQLHelper GetSQLHelper(SqlAnalyModel model)
         {
             if (model == null)
@@ -101,6 +134,8 @@ namespace DBHelper.SQLHelper
             }
             return sqlHelper;
         }
+
+
         #region 外部控制链接的开启和事务的提交
         /// <summary>
         /// 执行单条语句：外部控制链接的开启和事务的提交

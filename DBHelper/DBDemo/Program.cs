@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Linq;
+using System.Data.Common;
 
 namespace DBDemo
 {
@@ -13,20 +14,49 @@ namespace DBDemo
         {
             try
             {
-                Dictionary<string, object> dic = new Dictionary<string, object>();
-                var ulist = SQLHelperFactory.Instance.QueryMultiple<area, user, user>("GetData", dic, (a, u) =>
-                  {
-                      foreach (user item in u)
-                      {
-                          item.AreaList = a.ToList();
-                      }
-                      return u;
-                  });
-                var t = 1;
+                while (true)
+                {
+                    try
+                    {
+                        Console.Write("请输入需要添加的值，多个值直接用英文,分割,输入Q/q退出:");
+                        var s = Console.ReadLine();
+                        if (string.IsNullOrWhiteSpace(s))
+                        {
+                            continue;
+                        }
+                        if ((s == "q" || s == "Q"))
+                        {
+                            break;
+                        }
+                        var ids = s.Split(',');
+                        List<Dictionary<string, object>> dics = new List<Dictionary<string, object>>();
+                        foreach (var id in ids)
+                        {
+                            dics.Add(new Dictionary<string, object>
+                            {
+                                ["cid"] = id,
+                                ["name"] = "a" + id,
+                                ["sort"] = 0
+                            });
+                        }
+                        var connStr = SQLHelperFactory.Instance.ConnectionString("Insert2", null);
+                        SQLHelperFactory.Instance.ExecuteInTransaction(connStr, "mariadb", (conn, trans) =>
+                        {
+                            var i = SQLHelperFactory.Instance.ExecuteNonQuery(conn, trans, "Insert2", dics);
+                        });
+                        var menuList = SQLHelperFactory.Instance.QueryForList("GetMenu", null);
+                        Console.WriteLine($"当前数量：{menuList.Count}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.ToString());
+                    }
+                }
+
             }
             catch (Exception ex)
             {
-
+                Console.WriteLine(ex);
             }
             Console.Read();
         }
