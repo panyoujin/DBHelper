@@ -12,7 +12,19 @@
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
+    <!-- NuGet 打包元数据（msbuild /t:Pack） -->
+    <PackageId>DBHelper.NetFx</PackageId>
+    <Version>2.0.0</Version>
+    <Authors>jimmy.pan</Authors>
+    <Description>.NET Framework 4.8 版数据库访问层：SQL 外置到 XML 配置文件，通过 KEY + 参数字典执行，支持 MySQL/MariaDB/SQL Server/PostgreSQL 与配置热更新，封装 Dapper</Description>
+    <PackageProjectUrl>https://github.com/panyoujin/DBHelper</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>1. 目标框架 v4.0 → v4.8；2. MySQL 驱动迁移 MySql.Data → MySqlConnector 2.4.0（MIT，摆脱 GPL/商业双授权）；3. 新增 PostgreSQL 支持（Npgsql 6.0.10）与 MariaDB 支持；4. Dapper 2.1.35；5. SQL 配置按文件增量热更新；6. 新增事务封装 ExecuteInTransaction、外部事务重载与 ConnectionString(sqlKey)；7. SQL KEY 未命中改为抛异常，原始替换接入防注入白名单；</PackageReleaseNotes>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
@@ -32,6 +44,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <DocumentationFile>bin\Release\DBHelper.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Dapper">

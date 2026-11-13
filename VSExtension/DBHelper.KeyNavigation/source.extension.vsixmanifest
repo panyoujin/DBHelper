@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+  <Metadata>
+    <Identity Language="en-US" Id="DBHelper.KeyNavigation" Version="1.0.0" Publisher="jimmy.pan" />
+    <DisplayName>DBHelper SQL Key Navigation</DisplayName>
+    <Description xml:space="preserve">DBHelper SQL 外置配置跳转插件：在 C# 代码中按住 Ctrl 点击 SQL KEY 字符串（如 QueryForList("GetUserList", ...) 的第一个参数），自动跳转到 SqlConfig XML 配置文件中对应 &lt;Data name="..."&gt; 的位置。支持 MySQL/MariaDB/SQL Server/PostgreSQL 全部 DBHelper 项目。</Description>
+    <MoreInfo>https://github.com/panyoujin/DBHelper</MoreInfo>
+    <License>License.txt</License>
+    <Tags>C#, SQL, DBHelper, Navigation, Ctrl+Click</Tags>
+  </Metadata>
+  <Installation>
+    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0,18.0)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
+  </Installation>
+  <Prerequisites>
+    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.0,)" DisplayName="Visual Studio core editor" />
+  </Prerequisites>
+  <Dependencies />
+  <Assets>
+    <Asset Type="Microsoft.VisualStudio.MefComponent" Path="|DBHelper.KeyNavigation|" />
+  </Assets>
+</PackageManifest>
