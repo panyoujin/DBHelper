@@ -11,8 +11,13 @@
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
     <FileVersion>2.0.0.0</FileVersion>
     <PackageReleaseNotes>1. 目标框架升级 .NET 8（netcoreapp3.1 → net8.0，破坏性变更）；2. 新增 PostgreSQL 支持（Npgsql 8.0.5）；3. SQL Server 驱动迁移 Microsoft.Data.SqlClient；4. Dapper 2.1.35；5. SQL 配置按文件增量热更新；6. 新增事务封装 ExecuteInTransaction 与外部事务重载；</PackageReleaseNotes>
-    <PackageLicenseExpression></PackageLicenseExpression>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DocumentationFile>E:\GitHub\panyoujin\DBHelper\DBHelper\NetCore\CoreDBHelper\CoreDBHelper.xml</DocumentationFile>

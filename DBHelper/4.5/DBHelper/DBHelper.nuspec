@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>DBHelper.NetFx</id>
+    <version>2.0.0</version>
+    <authors>jimmy.pan</authors>
+    <license type="expression">MIT</license>
+    <projectUrl>https://github.com/panyoujin/DBHelper</projectUrl>
+    <readme>README.md</readme>
+    <description>.NET Framework 4.8 版数据库访问层：SQL 外置到 XML 配置文件，通过 KEY + 参数字典执行，支持 MySQL/MariaDB/SQL Server/PostgreSQL 与配置热更新，封装 Dapper</description>
+    <releaseNotes>1. 目标框架 v4.0 → v4.8；2. MySQL 驱动迁移 MySql.Data → MySqlConnector 2.4.0（MIT，摆脱 GPL/商业双授权）；3. 新增 PostgreSQL 支持（Npgsql 6.0.10）与 MariaDB 支持；4. Dapper 2.1.35；5. SQL 配置按文件增量热更新；6. 新增事务封装 ExecuteInTransaction、外部事务重载与 ConnectionString(sqlKey)；7. SQL KEY 未命中改为抛异常，原始替换接入防注入白名单；</releaseNotes>
+    <dependencies>
+      <group targetFramework="net48">
+        <dependency id="Dapper" version="2.1.35" />
+        <dependency id="MySqlConnector" version="2.4.0" />
+        <dependency id="Npgsql" version="6.0.10" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="bin\Release\DBHelper.dll" target="lib\net48" />
+    <file src="bin\Release\DBHelper.xml" target="lib\net48" />
+    <file src="README.md" target="\" />
+  </files>
+</package>
