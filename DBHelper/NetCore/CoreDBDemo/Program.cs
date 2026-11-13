@@ -31,6 +31,7 @@ namespace CoreDBDemo
                 trans.Commit();
             }
             var list = SQLHelperFactory.Instance.QueryForList("GetMenu", null);
+            Console.WriteLine($"数量：{list.Count}");
             //var i = SQLHelperFactory.Instance.ExecuteNonQuery("Insert2", dics);
             Console.Read();
         }

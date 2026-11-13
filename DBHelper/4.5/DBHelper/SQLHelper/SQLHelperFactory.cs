@@ -48,6 +48,39 @@ namespace DBHelper.SQLHelper
         /// </summary>
         public string DefaultConnectionStrings;
 
+        /// <summary>
+        /// 获取指定 SQL KEY 所配置的数据库连接字符串（用于外部创建连接、开启事务）
+        /// </summary>
+        /// <param name="sqlKey">SQL 配置的 KEY</param>
+        /// <param name="dictParam">参数字典（含 ConnectionPrefix 分库前缀等特殊 key 时需传入）</param>
+        public string ConnectionString(string sqlKey, Dictionary<string, object> dictParam = null)
+        {
+            var model = CacheSqlConfig.Instance.GetSqlAnalyByKey(sqlKey, dictParam ?? new Dictionary<string, object>());
+            var connectionStr = string.Empty;
+            if (!string.IsNullOrWhiteSpace(model.SqlConnStringName))
+            {
+                if (!ConnectionStringsDic.ContainsKey(model.SqlConnStringName))
+                {
+                    var config = System.Configuration.ConfigurationManager.ConnectionStrings[model.SqlConnStringName];
+                    if (config == null || string.IsNullOrWhiteSpace(config.ConnectionString))
+                    {
+                        throw new InvalidOperationException(string.Format("未找到名称为 {0} 的连接字符串配置。", model.SqlConnStringName));
+                    }
+                    ConnectionStringsDic[model.SqlConnStringName] = config.ConnectionString;
+                }
+                connectionStr = ConnectionStringsDic[model.SqlConnStringName];
+            }
+            if (string.IsNullOrWhiteSpace(connectionStr))
+            {
+                if (string.IsNullOrWhiteSpace(DefaultConnectionStrings))
+                {
+                    throw new InvalidOperationException("数据库连接配置不正确，既未找到命名连接串，也未配置默认连接串。");
+                }
+                connectionStr = DefaultConnectionStrings;
+            }
+            return connectionStr;
+        }
+
         private ISQLHelper GetSQLHelper(SqlAnalyModel model)
         {
             if (model == null)
@@ -67,6 +100,11 @@ namespace DBHelper.SQLHelper
                     break;
                 case "sqlserver":
                     sqlHelper = new SqlServerHelper();
+                    break;
+                case "postgresql":
+                case "postgres":
+                case "pgsql":
+                    sqlHelper = new NpgsqlHelper();
                     break;
                 default:
                     sqlHelper = new MySqlHelper();
@@ -96,6 +134,8 @@ namespace DBHelper.SQLHelper
             }
             return sqlHelper;
         }
+
+
         #region 外部控制链接的开启和事务的提交
         /// <summary>
         /// 执行单条语句：外部控制链接的开启和事务的提交
@@ -130,7 +170,7 @@ namespace DBHelper.SQLHelper
         /// 按数据库类型创建连接
         /// </summary>
         /// <param name="connectionString">连接字符串</param>
-        /// <param name="dbType">数据库类型：mysql（默认）/sqlserver</param>
+        /// <param name="dbType">数据库类型：mysql（默认）/sqlserver/postgresql</param>
         /// <returns></returns>
         private DbConnection CreateTransactionConnection(string connectionString, string dbType)
         {
@@ -138,8 +178,12 @@ namespace DBHelper.SQLHelper
             {
                 case "sqlserver":
                     return new System.Data.SqlClient.SqlConnection(connectionString);
+                case "postgresql":
+                case "postgres":
+                case "pgsql":
+                    return new Npgsql.NpgsqlConnection(connectionString);
                 default:
-                    return new MySql.Data.MySqlClient.MySqlConnection(connectionString);
+                    return new MySqlConnector.MySqlConnection(connectionString);
             }
         }
         /// <summary>
@@ -213,7 +257,7 @@ namespace DBHelper.SQLHelper
             {
                 return GetSQLHelper(sqlAnaly).ExecuteNonQuery(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -244,7 +288,7 @@ namespace DBHelper.SQLHelper
             {
                 return GetSQLHelper(sqlAnaly).ExecuteNonQuery(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -275,7 +319,7 @@ namespace DBHelper.SQLHelper
             {
                 return GetSQLHelper(sqlAnaly).ExecuteReader(sqlAnaly.SqlText, CommandType.Text, paramDic);
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -306,7 +350,7 @@ namespace DBHelper.SQLHelper
             {
                 return GetSQLHelper(sqlAnaly).ExecuteScalar(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -338,7 +382,7 @@ namespace DBHelper.SQLHelper
             {
                 return GetSQLHelper(sqlAnaly).ExecuteScalar<T>(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -375,7 +419,7 @@ namespace DBHelper.SQLHelper
                 }
                 return list.ToList();
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -411,7 +455,7 @@ namespace DBHelper.SQLHelper
                 }
                 return list.ToList();
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -488,7 +532,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryForObject(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -520,7 +564,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryForObject<T>(sqlAnaly.SqlText, CommandType.Text, paramDic, isUseTrans);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -553,7 +597,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultipleByPage<T>(sqlAnaly.SqlText, CommandType.Text, paramDic, out total, isUseTrans);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -587,7 +631,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultiple(sqlAnaly.SqlText, CommandType.Text, paramDic, func, isUseTrans);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -622,7 +666,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultiple(sqlAnaly.SqlText, CommandType.Text, paramDic, func, isUseTrans);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -657,7 +701,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultiple(sqlAnaly.SqlText, CommandType.Text, paramDic, func, isUseTrans);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -691,7 +735,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultiple(sqlAnaly.SqlText, CommandType.Text, paramDic, func, isUseTrans);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -771,7 +815,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultipleByPage<T>(sqlAnaly.SqlText, CommandType.Text, paramDic);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -804,7 +848,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultiple<TFirst, TSecond>(sqlAnaly.SqlText, CommandType.Text, paramDic);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -838,7 +882,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultiple<TFirst, TSecond, TThird>(sqlAnaly.SqlText, CommandType.Text, paramDic);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -873,7 +917,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultiple<TFirst, TSecond, TThird, TFourth>(sqlAnaly.SqlText, CommandType.Text, paramDic);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {
@@ -909,7 +953,7 @@ namespace DBHelper.SQLHelper
                 var t = GetSQLHelper(sqlAnaly).QueryMultiple<TFirst, TSecond, TThird, TFourth, TFifth>(sqlAnaly.SqlText, CommandType.Text, paramDic);
                 return t;
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (maxretry > 0 && RetryMessage.Contains(ex.Message))
                 {

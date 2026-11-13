@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <SqlSetting>
   <Data name="Insert">
-    <SqlDefinition type="MySql" ConnStringName="test_mysql">
+    <SqlDefinition type="mariadb" ConnStringName="test_mariadb">
       <SqlCommand>
         <![CDATA[
       INSERT INTO `menu` ( `name`, `sort`) VALUES  ( @@name@@, @@sort@@) 
@@ -13,16 +13,16 @@
 
 
   <Data name="Insert2">
-    <SqlDefinition type="MySql" ConnStringName="test_mysql" ParentKey="Insert">
+    <SqlDefinition type="mariadb" ConnStringName="test_mariadb" ParentKey="Insert">
       <SqlCommand>
         <![CDATA[
-      INSERT INTO `t` (`cid`)  VALUES (@@cid@@) ;
+      INSERT INTO `test` (`name`)  VALUES (@@cid@@) ;
       ]]>
       </SqlCommand>
     </SqlDefinition>
   </Data>
   <Data name="GetMenu">
-    <SqlDefinition type="MySql" ConnStringName="test_mysql">
+    <SqlDefinition type="mariadb" ConnStringName="test_mariadb">
       <SqlCommand>
         <![CDATA[
       select * from menu ;

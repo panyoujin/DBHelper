@@ -1,22 +1,32 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <SqlSetting>
-  <Data name="GetData">
-    <SqlDefinition type="MySql" ConnStringName="test_mysql">
+
+  <Data name="Insert">
+    <SqlDefinition type="mariadb" ConnStringName="test_mariadb">
       <SqlCommand>
         <![CDATA[
-      
-SELECT `AreaId`,`AreaName` FROM `area` LIMIT 0,1;
-
-SELECT `UserId`,`UserAccount`,`UserPassword` FROM `user` WHERE UserId=2;
+      INSERT INTO `menu` ( `name`, `sort`) VALUES  ( @@name@@, @@sort@@) 
+      ;
       ]]>
       </SqlCommand>
     </SqlDefinition>
   </Data>
-  <Data name="AlertTable">
-    <SqlDefinition type="MySql" ConnStringName="test_mysql">
+
+
+  <Data name="Insert2">
+    <SqlDefinition type="mariadb" ConnStringName="test_mariadb" ParentKey="Insert">
       <SqlCommand>
         <![CDATA[
-       ALTER TABLE `log` ADD COLUMN TENDER_ID DECIMAL(19,0) NULL;
+      INSERT INTO `test` (`name`)  VALUES (@@cid@@) ;
+      ]]>
+      </SqlCommand>
+    </SqlDefinition>
+  </Data>
+  <Data name="GetMenu">
+    <SqlDefinition type="mariadb" ConnStringName="test_mariadb">
+      <SqlCommand>
+        <![CDATA[
+      select * from menu ;
       ]]>
       </SqlCommand>
     </SqlDefinition>
